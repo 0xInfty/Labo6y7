@@ -55,11 +55,10 @@ Mp = [N, 200]; % This is PMUSIC's most important parameter
 % It can't be greater than the measurement's dimension.
 
 % Then define several variables to be filled
-MSn1=[];
-Mfn1=[];
-MSn=[];
-Mfn=[];
-MC=[];
+MSn1 = [];
+Mfn1 = [];
+MSn = [];
+Mfn = [];
 iPMindex=0;
 
 for i = PMT+1 : PMdt : 1350 % WHY 1350?
@@ -85,30 +84,24 @@ subplot(3,2,1);
 imagesc([1:T], Mfn(:,1), MSn);
 
 
-%**************************************************************************
-%--------------------------------------------------------------------------
-%**************************************************************************
+%% LINEAR PREDICTION ------------------------------------------------------
 
-%%
+% Select data
+LPdata = data.meanuV; % If I want to use the mean
+%LPdata = data.uV(:, 2); % If I want to use a particular measurement
 
-%------------Seleccion de t0-----------------------------------------------
-
-vtest=data.vvm;           % Si quiero trabajar con el promedio.
-%vtest=medi.vv(:,2);      % Si quiero trabajar con una medición particular.
-
-%figure(5);
+% Select t0
 subplot(3,2,3);
-plot(data.tt,vtest);
-xlim([-20,1350]);
-[t0,nn]=ginput;
+plot(data.t, LPdata);
+xlim([-20, 1350]);
+[t0, ~] = ginput;
 t0
 
-data.v=data.vv(data.tt>t0,:);
-data.t=data.tt(data.tt>t0);
-data.t=data.t-data.t(1);
-
-data.vm=mean(data.v,2);
-%close
+% Crop data
+data.cropuV = data.uV(data.t>t0, :);
+data.cropt = data.t(data.t>t0);
+data.cropt = data.cropt - data.t(1);
+data.cropmeanuV = mean(data.cropuV, 2);
 
 %--------------------------------------------------------------------------
 
