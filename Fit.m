@@ -2,9 +2,9 @@ clear all
 
 file = 'M_20190410_07.txt';
 
-max_nrepetitions = 3
+max_nrepetitions = 3 % BEWARE OF FALSE COLUMNS!
 
-%% Load data --------------------------------------------------------------
+%% LOAD DATA --------------------------------------------------------------
 
 % First get data's name
 [~, data.name, ~] = fileparts(file);
@@ -17,77 +17,74 @@ rawdata = rawdata.data;
 % Define data size
 
 data.nrepetitions = size(rawdata, 2) / 2; % Number of measurements
-data.nsize = size(rawdata, 1);    % Length of each measurement
+data.nsize = size(rawdata, 1); % Length of each measurement
 
-%%
+%% GET TIME AND VOLTAGE ---------------------------------------------------
 
-%-----Por simplicidad suponemos un unica columna de retardo temporal-------
+% Get time
+t = rawdata(:,1); % Consider just one time column
+T = t(end) - t(1); % Total time
+data.samplerate = data.nsize / T;  % Sampling rate
+data.dt = T / data.nsize; % Time step
 
-tiem = rawdata(:,1); %tiem=4*( 160 - flipud(datin(:,1)) );  % Arreglamos  retardo %% Si no quiero considerar la primer columna de datos: tiem=4*(160 - flipud(datin(:,3)))
-T = (tiem(end)-tiem(1));              % Tiempo total
-data.fs = data.nsize / T;                % Extraigo frecuencia de Sampleo
-data.dt = T / data.nsize;                % Extraigo delta t
+% Add equispaced time
+data.t = linspace(t(1), t(end), data.nsize)';
 
-data.tt=linspace(tiem(1),tiem(end),data.nsize)'; % Genero retardo equiespaciado para evitar problemas
-
-for i=1:data.nrepetitions %% Si no quiero considerar la primer columna de datos: for i=2:medi.rep
-    data.vv(:,i)=1e6 * rawdata(:,i*2); % Generando variable cruda vv de datos y ordenando datos de menor a mayor retardo y multiplicando por 1e6 para que la unidad sea uV
+% Add uV voltage
+for i = 1:data.nrepetitions % BEWARE OF FALSE COLUMNS!
+    data.uV(:, i) = 1e6 * rawdata(:, i*2); 
 end
-data.vvm=mean(data.vv,2); % Agrego promedio por si es util: 'vvm'
+% WHY i*2? "ordenando datos de menor a mayor retardo"
 
-%%-------------------------------------------------------------------------
+% Add mean 
+data.meanuV = mean(data.uV, 2);
+% IS THIS ONLY TAKING COLUMN 2 VOLTAGE?
 
+%% PMUSIC -----------------------------------------------------------------
 
-%----------Aplicando filtros y reajuste de sampleo opcional----------------
+% Start by defining general parameters
+PMN = floor(data.nsize / 4) % WHY /4? "cantidad de mediciones"
+PMT = 1200; % size of the window in ps
+PMdt = 20; % time step in ps
 
+% Now get PMUSIC's parameters
+PMdata = detrend(data.meanuV); % WHY detrend?
+Mp = [N, 200]; % This is PMUSIC's most important parameter
+% Mp = [components' dimension, harmonics' limit]
+% Second variable marks how many harmonics to throw away.
+% It can't be greater than the measurement's dimension.
 
+% Then define several variables to be filled
+MSn1=[];
+Mfn1=[];
+MSn=[];
+Mfn=[];
+MC=[];
+iPMindex=0;
 
-%--------------------------------------------------------------------------
+for i = PMT+1 : PMdt : 1350 % WHY 1350?
 
+    iPMindex = iPMindex + 1;
+    MSn1 = [];
+    Mfn1 = [];
 
-figure(1);
-%subplot(6,1,1);
-%plot(medi.tt,medi.vvm);
-
-
-%**************************************************************************
-%-------------------------------PMUSIC-------------------------------------
-%**************************************************************************
-
-subplot(3,2,1);
-if 1
-    
-    nnn = floor((data.nsize)/4) % es la cantidad de mediciones
-    Mp = [nnn,200]; % este es el parametro principal de PMUSIC, es la dimension de componentes, el segundo valor es un limite que marca que armonicos descartar, no puede ser mayor a la dimension de la medicion
-    Mdt=1200; % es el tamaño de la ventana y esta en ps
-    pasot=20; % es el paso entre ventanas en ps
-    
-    vmm=data.vvm;
-    vmm=detrend(vmm);
-    MSn1=[];
-    Mfn1=[];
-    MSn=[];
-    Mfn=[];
-    MC=[];
-    Mind=0;
-    for i=Mdt+1:pasot:1350
-        Mind=Mind+1;
-        MSn1=[];
-        Mfn1=[];
-        seg=vmm(  ( ((i-Mdt)<data.tt)&(data.tt<i) )  );
-        [MSn1,Mfn1] = pmusic(seg,Mp,6000,data.fs,[],0);
+    % Take a segment of data and apply PMUSIC
+    iPMdata = PMdata(  ( ((i-PMT) < data.t) & (data.t < i) )  );
+    [MSn1, Mfn1] = pmusic(iPMdata, Mp, 6000, data.samplerate, [], 0); 
+    % WHY 6000?
         
-        Sel=((Mfn1>=0.00) & (Mfn1<=0.06));
-        MSn(:,Mind)=MSn1(Sel);
-        Mfn(:,Mind)=Mfn1(Sel);
-    end
-    
-    MC=MSn;
-    
-    imagesc([1:T],Mfn(:,1),MC);
-    
-   
+    iPMselection = ((Mfn1 >= 0.00) & (Mfn1 <= 0.06));
+    MSn(:, iPMindex) = MSn1(iPMselection);
+    Mfn(:, iPMindex) = Mfn1(iPMselection);
+
 end
+
+% Finally... Plot! :)
+figure(1);
+subplot(3,2,1);    
+imagesc([1:T], Mfn(:,1), MSn);
+
+
 %**************************************************************************
 %--------------------------------------------------------------------------
 %**************************************************************************
