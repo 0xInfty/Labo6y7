@@ -49,7 +49,7 @@ PMdt = 20; % time step in ps
 
 % Now get PMUSIC's parameters
 PMdata = detrend(data.meanuV); % WHY detrend?
-Mp = [N, 200]; % This is PMUSIC's most important parameter
+Mp = [PMN, 200]; % This is PMUSIC's most important parameter
 % Mp = [components' dimension, harmonics' limit]
 % Second variable marks how many harmonics to throw away.
 % It can't be greater than the measurement's dimension.
@@ -61,7 +61,7 @@ MSn = [];
 Mfn = [];
 iPMindex=0;
 
-for i = PMT+1 : PMdt : 1350 % WHY 1350?
+for i = PMT+1 : PMdt : 1350 % WHY THIS I?
 
     iPMindex = iPMindex + 1;
     MSn1 = [];
