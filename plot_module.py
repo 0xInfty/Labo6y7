@@ -64,6 +64,16 @@ def fullplotPumpProbe(file, save=True):
     plt.subplot(grid[1:,1])
     plt.plot(t, V, linewidth=0.8)
     plt.plot(meant, meanV, linewidth=1.5)
+   
+def plotallPumpProbe(path, save=True):
+    
+    files = []
+    for file in os.listdir(path):
+        if file.endswith(".txt"):
+            files.append(os.path.join(path,file))
+    
+    for f in files:
+        plotPumpProbe(f, save=save)
     
     if save:
         plt.savefig(os.path.join(path,name+'_full.png'), bbox_inches='tight')
