@@ -1,10 +1,10 @@
 clear all
 
-file = 'M_20190410_07.txt';
+file = 'M_20190410_05.txt';
 
-max_nrepetitions = 3 % BEWARE OF FALSE COLUMNS!
+max_nrepetitions = 3
 
-%% LOAD DATA --------------------------------------------------------------
+%% Load data --------------------------------------------------------------
 
 % First get data's name
 [~, data.name, ~] = fileparts(file);
@@ -17,91 +17,101 @@ rawdata = rawdata.data;
 % Define data size
 
 data.nrepetitions = size(rawdata, 2) / 2; % Number of measurements
-data.nsize = size(rawdata, 1); % Length of each measurement
+data.nsize = size(rawdata, 1);    % Length of each measurement
 
-%% GET TIME AND VOLTAGE ---------------------------------------------------
+%%
 
-% Get time
-t = rawdata(:,1); % Consider just one time column
-T = t(end) - t(1); % Total time
-data.samplerate = data.nsize / T;  % Sampling rate
-data.dt = T / data.nsize; % Time step
+%-----Por simplicidad suponemos un unica columna de retardo temporal-------
 
-% Add equispaced time
-data.t = linspace(t(1), t(end), data.nsize)';
+tiem = rawdata(:,1); %tiem=4*( 160 - flipud(datin(:,1)) );  % Arreglamos  retardo %% Si no quiero considerar la primer columna de datos: tiem=4*(160 - flipud(datin(:,3)))
+T = (tiem(end)-tiem(1));              % Tiempo total
+data.fs = data.nsize / T;                % Extraigo frecuencia de Sampleo
+data.dt = T / data.nsize;                % Extraigo delta t
 
-% Add uV voltage
-for i = 1:data.nrepetitions % BEWARE OF FALSE COLUMNS!
-    data.uV(:, i) = 1e6 * rawdata(:, i*2); 
+data.tt=linspace(tiem(1),tiem(end),data.nsize)'; % Genero retardo equiespaciado para evitar problemas
+
+for i=1:data.nrepetitions %% Si no quiero considerar la primer columna de datos: for i=2:medi.rep
+    data.vv(:,i)=1e6 * rawdata(:,i*2); % Generando variable cruda vv de datos y ordenando datos de menor a mayor retardo y multiplicando por 1e6 para que la unidad sea uV
 end
-% WHY i*2? "ordenando datos de menor a mayor retardo"
+promedio=mean(data.vv,2); % Agrego promedio por si es util: 'vvm'
 
-% Add mean 
-data.meanuV = mean(data.uV, 2);
-% IS THIS ONLY TAKING COLUMN 2 VOLTAGE?
+%%-------------------------------------------------------------------------
 
-%% PMUSIC -----------------------------------------------------------------
 
-% Start by defining general parameters
-PMN = floor(data.nsize / 4) % WHY /4? "cantidad de mediciones"
-PMT = 1200; % size of the window in ps
-PMdt = 20; % time step in ps
+%----------Aplicando filtros y reajuste de sampleo opcional----------------
 
-% Now get PMUSIC's parameters
-PMdata = detrend(data.meanuV); % WHY detrend?
-Mp = [PMN, 200]; % This is PMUSIC's most important parameter
-% Mp = [components' dimension, harmonics' limit]
-% Second variable marks how many harmonics to throw away.
-% It can't be greater than the measurement's dimension.
 
-% Then define several variables to be filled
-MSn1 = [];
-Mfn1 = [];
-MSn = [];
-Mfn = [];
-iPMindex=0;
 
-for i = PMT+1 : PMdt : 1350 % WHY THIS I?
+%--------------------------------------------------------------------------
 
-    iPMindex = iPMindex + 1;
-    MSn1 = [];
-    Mfn1 = [];
 
-    % Take a segment of data and apply PMUSIC
-    iPMdata = PMdata(  ( ((i-PMT) < data.t) & (data.t < i) )  );
-    [MSn1, Mfn1] = pmusic(iPMdata, Mp, 6000, data.samplerate, [], 0); 
-    % WHY 6000?
-        
-    iPMselection = ((Mfn1 >= 0.00) & (Mfn1 <= 0.06));
-    MSn(:, iPMindex) = MSn1(iPMselection);
-    Mfn(:, iPMindex) = Mfn1(iPMselection);
-
-end
-
-% Finally... Plot! :)
 figure(1);
-subplot(3,2,1);    
-imagesc([1:T], Mfn(:,1), MSn);
+%subplot(6,1,1);
+%plot(medi.tt,medi.vvm);
 
 
-%% LINEAR PREDICTION ------------------------------------------------------
+%**************************************************************************
+%-------------------------------PMUSIC-------------------------------------
+%**************************************************************************
 
-% Select data
-LPdata = data.meanuV; % If I want to use the mean
-%LPdata = data.uV(:, 2); % If I want to use a particular measurement
+subplot(3,2,1);
+if 1
+    
+    nnn = floor((data.nsize)/4) % es la cantidad de mediciones
+    Mp = [nnn,200]; % este es el parametro principal de PMUSIC, es la dimension de componentes, el segundo valor es un limite que marca que armonicos descartar, no puede ser mayor a la dimension de la medicion
+    Mdt=1200; % es el tamaño de la ventana y esta en ps
+    pasot=20; % es el paso entre ventanas en ps
+    
+    vmm=promedio;
+    vmm=detrend(vmm);
+    MSn1=[];
+    Mfn1=[];
+    MSn=[];
+    Mfn=[];
+    MC=[];
+    Mind=0;
+    for i=Mdt+1:pasot:1350
+        Mind=Mind+1;
+        MSn1=[];
+        Mfn1=[];
+        seg=vmm(  ( ((i-Mdt)<data.tt)&(data.tt<i) )  );
+        [MSn1,Mfn1] = pmusic(seg,Mp,6000,data.fs,[],0);
+        
+        Sel=((Mfn1>=0.00) & (Mfn1<=0.06));
+        MSn(:,Mind)=MSn1(Sel);
+        Mfn(:,Mind)=Mfn1(Sel);
+    end
+    
+    MC=MSn;
+    
+    imagesc([1:T],Mfn(:,1),MC);
+    
+   
+end
+%**************************************************************************
+%--------------------------------------------------------------------------
+%**************************************************************************
 
-% Select t0
+%%
+
+%------------Seleccion de t0-----------------------------------------------
+
+vtest=promedio;           % Si quiero trabajar con el promedio.
+%vtest=medi.vv(:,2);      % Si quiero trabajar con una medición particular.
+
+%figure(5);
 subplot(3,2,3);
-plot(data.t, LPdata);
-xlim([-20, 1350]);
-[t0, ~] = ginput;
+plot(data.tt,vtest);
+xlim([-20,1350]);
+[t0,nn]=ginput;
 t0
 
-% Crop data
-data.cropuV = data.uV(data.t>t0, :);
-data.cropt = data.t(data.t>t0);
-data.cropt = data.cropt - data.t(1);
-data.cropmeanuV = mean(data.cropuV, 2);
+data.v=data.vv(data.tt>t0,:);
+data.t=data.tt(data.tt>t0);
+data.t=data.t-data.t(1);
+
+data.vm=mean(data.v,2);
+%close
 
 %--------------------------------------------------------------------------
 
@@ -110,7 +120,7 @@ data.cropmeanuV = mean(data.cropuV, 2);
 % Se elige trabajar con el promedio o alguna de las mediciones directas
 
 %x = data.v(:,2);   % Si quiero trabajar con una medicion particular.       <<<-------------------------------------------------------
-x = data.vm - 7.2e-1;      % Creo que esto es viejo, no sirve. 
+x = data.vm;% - 7.2e-1;      % Creo que esto es viejo, no sirve. 
 %x = data.vm;%x = medi.vm+2*ones(size(medi.vm));% Si quiero trabajar con el promedio.   <<<-------------------------------------------------------
 t = data.t;
 deltat = data.dt;
@@ -427,11 +437,10 @@ for i=1:length(W)
 subplot(3,2,6);
 plot(freq,spectrum,freq,res);title('Raman-like Data Spectrum');xlabel('freq (GHz)');ylabel('spectrum');
 
-
 %for SiO2
-t0=0.26;
-Cp=C.*exp(B*t0);
-fip=W*t0-fi;
+t02=0.26;
+Cp=C.*exp(B*t02);
+fip=W*t02-fi;
 
 for i=1:length(W)
       yp(:,i)=Cp(i).*exp(-B(i).*t).*cos(W(i).*t+fip(i));
@@ -453,3 +462,23 @@ resultsGHz=[fG
    Q];
 resultsGHz=resultsGHz'
 
+%%
+
+figure
+plot(t,x)
+hold on
+plot(t,Y, 'LineWidth', 2.5)
+xlabel('Tiempo (ps)')
+ylabel('Voltaje (uV)')
+savefig(data.name)
+
+figure
+% plot(freq,spectrum)
+% hold on
+plot(freq,res)
+xlabel('Frecuencia (GHz)')
+ylabel('Espectro reconstruído (u.a.)')
+[~, len] = size(res);
+for i=1:len
+	legends(i) = sprintf('%f GHz', fG(i))
+end
