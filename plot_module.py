@@ -23,8 +23,13 @@ def plotPumpProbe(file, save=True):
     
     Returns
     -------
-    matplotlib.pyplot figure
-    png image file
+    fig : matplotlib.pyplot.Figure instance
+        Figure containing the desired plot.
+    
+    Raises
+    ------
+    pngfile : .png file
+        PNG image file (only if 'save=True').
     
     See also
     --------
@@ -43,7 +48,7 @@ def plotPumpProbe(file, save=True):
     meanV = np.mean(V, axis=1)
     meant = t[:,0]
     
-    plt.figure()
+    fig = plt.figure()
     plt.plot(t, V, linewidth=0.8)
     plt.plot(meant, meanV, linewidth=1.5)
     legends = ['Experimento {:.0f}'.format(i+1) for i in range(N)]
@@ -58,6 +63,8 @@ def plotPumpProbe(file, save=True):
     if save:
         plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
     
+    return fig
+    
 def fullplotPumpProbe(file, save=True):
     
     """Plots all PumpProbe experiments from a file on a set of subplots.
@@ -71,8 +78,13 @@ def fullplotPumpProbe(file, save=True):
     
     Returns
     -------
-    matplotlib.pyplot figure
-    png image file
+    fig : matplotlib.pyplot.Figure instance
+        Figure containing the desired plot.
+    
+    Raises
+    ------
+    pngfile : .png file
+        PNG image file (only if 'save=True').
     
     See also
     --------
@@ -91,7 +103,7 @@ def fullplotPumpProbe(file, save=True):
     meanV = np.mean(V, axis=1)
     meant = t[:,0] #np.mean(t, axis=1)
     
-    plt.figure()
+    fig = plt.figure()
     grid = plt.GridSpec(N, 2, wspace=0.4, hspace=0.3)
     
     for i in range(N):
@@ -110,6 +122,8 @@ def fullplotPumpProbe(file, save=True):
     
     if save:
         plt.savefig(os.path.join(path,name+'_full.png'), bbox_inches='tight')
+    
+    return fig
    
 def plotallPumpProbe(path, full=False, save=True):
     
@@ -141,6 +155,6 @@ def plotallPumpProbe(path, full=False, save=True):
     
     for f in files:
         if full:
-            fullplotPumpProbe(f, save=save)
+            fullplotPumpProbe(f, save=save);
         else:
-            plotPumpProbe(f, save=save)
+            plotPumpProbe(f, save=save);
