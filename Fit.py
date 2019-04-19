@@ -53,8 +53,8 @@ cursor.visible = False
 cursor.active = False
 
 # Crop data
-V = t[t>=t0]
-meanV = data[t>=t0]
+V = V[t>=t0, :]
+meanV = meanV[t>=t0]
 t = t[t>=t0]
 
 #%% PMUSIC -----------------------------------------------------------------
