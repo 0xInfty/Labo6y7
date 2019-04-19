@@ -1,188 +1,136 @@
 clear all
 
-file = 'M_20190410_05.txt';
+file = 'M_20190408_04.txt';
 
-max_nrepetitions = 3
-
-%% Load data --------------------------------------------------------------
+%% ************************************************************************
+%------------------------------GENERAL-------------------------------------
+%**************************************************************************
 
 % First get data's name
-[~, data.name, ~] = fileparts(file);
+[~, name, ~] = fileparts(file);
 
 % Now get data and its details
-rawdata = importdata(file); % '.data' is data, '.textdata' is file's text
-data.details = rawdata.textdata(2); 
+details = importdata(file, '', 7); % '.data' is data, '.textdata' is file's text
+rawdata = importdata(file)
 rawdata = rawdata.data;
 
-% Define data size
+% Get also some important parameters
+nrepetitions = size(rawdata, 2) / 2; % Number of measurements
+nsize = size(rawdata, 1);    % Length of each measurement
 
-data.nrepetitions = size(rawdata, 2) / 2; % Number of measurements
-data.nsize = size(rawdata, 1);    % Length of each measurement
+% Now create an equispaced time in ps
+t = rawdata(:,1); % Out of simplicity
+T = t(end) - t(1); % Total time
+samplerate = nsize / T; % Sampling rate
+dt = T / nsize; % Delta t
+t = linspace(t(1), t(end), nsize)';
 
-%%
-
-%-----Por simplicidad suponemos un unica columna de retardo temporal-------
-
-tiem = rawdata(:,1); %tiem=4*( 160 - flipud(datin(:,1)) );  % Arreglamos  retardo %% Si no quiero considerar la primer columna de datos: tiem=4*(160 - flipud(datin(:,3)))
-T = (tiem(end)-tiem(1));              % Tiempo total
-data.fs = data.nsize / T;                % Extraigo frecuencia de Sampleo
-data.dt = T / data.nsize;                % Extraigo delta t
-
-data.tt=linspace(tiem(1),tiem(end),data.nsize)'; % Genero retardo equiespaciado para evitar problemas
-
-for i=1:data.nrepetitions %% Si no quiero considerar la primer columna de datos: for i=2:medi.rep
-    data.vv(:,i)=1e6 * rawdata(:,i*2); % Generando variable cruda vv de datos y ordenando datos de menor a mayor retardo y multiplicando por 1e6 para que la unidad sea uV
+% And a matrix that holds the voltage in uV
+for i = 1 : nrepetitions % 2 : nrepetitions in case of faulty measurement
+    V(:,i) = 1e6 * rawdata(:, i*2);
 end
-promedio=mean(data.vv,2); % Agrego promedio por si es util: 'vvm'
+meanV = mean(V, 2);
 
-%%-------------------------------------------------------------------------
-
-
-%----------Aplicando filtros y reajuste de sampleo opcional----------------
-
-
-
-%--------------------------------------------------------------------------
-
-
-figure(1);
-%subplot(6,1,1);
-%plot(medi.tt,medi.vvm);
-
-
-%**************************************************************************
+%% ************************************************************************
 %-------------------------------PMUSIC-------------------------------------
 %**************************************************************************
 
 subplot(3,2,1);
-if 1
     
-    nnn = floor((data.nsize)/4) % es la cantidad de mediciones
-    Mp = [nnn,200]; % este es el parametro principal de PMUSIC, es la dimension de componentes, el segundo valor es un limite que marca que armonicos descartar, no puede ser mayor a la dimension de la medicion
-    Mdt=1200; % es el tamaño de la ventana y esta en ps
-    pasot=20; % es el paso entre ventanas en ps
+nnn = floor(nsize / 4) % Number of measurements
+Mp = [nnn, 200]; % Mean PMUSIC parameter
+% Dimension, Limit that marks how many harmonics to discard
+% Can't be greater than dimension
+Mdt = 1200; % es el tamaño de la ventana y esta en ps
+pasot = 20; % es el paso entre ventanas en ps
+
+vmm = meanV;
+vmm = detrend(vmm);
+MSn1 = [];
+Mfn1 = [];
+MSn = [];
+Mfn = [];
+MC = [];
+Mind = 0;
+
+for i = Mdt+1 : pasot : 1350
+    Mind = Mind+1;
+    MSn1 = [];
+    Mfn1 = [];
+    seg = vmm(  ((i-Mdt)<t) & (t<i)  );
+    [MSn1, Mfn1] = pmusic(seg, Mp, 6000, samplerate, [], 0);
     
-    vmm=promedio;
-    vmm=detrend(vmm);
-    MSn1=[];
-    Mfn1=[];
-    MSn=[];
-    Mfn=[];
-    MC=[];
-    Mind=0;
-    for i=Mdt+1:pasot:1350
-        Mind=Mind+1;
-        MSn1=[];
-        Mfn1=[];
-        seg=vmm(  ( ((i-Mdt)<data.tt)&(data.tt<i) )  );
-        [MSn1,Mfn1] = pmusic(seg,Mp,6000,data.fs,[],0);
-        
-        Sel=((Mfn1>=0.00) & (Mfn1<=0.06));
-        MSn(:,Mind)=MSn1(Sel);
-        Mfn(:,Mind)=Mfn1(Sel);
-    end
-    
-    MC=MSn;
-    
-    imagesc([1:T],Mfn(:,1),MC);
-    
-   
+    Sel = ( (Mfn1>=0.00) & (Mfn1<=0.06) );
+    MSn(:,Mind) = MSn1(Sel);
+    Mfn(:,Mind) = Mfn1(Sel);
 end
+
+MC = MSn;
+
+imagesc([1:T], Mfn(:,1), MC);
+
+%% ************************************************************************
+%-------------------------LINEAR PREDICTION--------------------------------
 %**************************************************************************
-%--------------------------------------------------------------------------
-%**************************************************************************
+
+% Select data
+x = meanV; % If I want to use the mean value.
+%x = V(:,2); % If I want to use a particular measurement.
+
+% Select t0
+subplot(3,2,3);
+plot(t, x);
+xlim([-20, 1350]);
+[t0, nn] = ginput;
+t0
+
+% Crop data
+V = V(t>t0, :);
+meanV = meanV(t>t0, :);
+x = x(t>t0);
+t = t(t>t0);
 
 %%
 
-%------------Seleccion de t0-----------------------------------------------
+% General parameters
+c1=2e-5; c2=1e-5; c3=0.5e-4; cn=8e-15;
+b1=3; b2=1; b3=5;
+w1=5*2*pi; w2=4.5*2*pi;
+p1=pi; p2=0.5*pi;
 
-vtest=promedio;           % Si quiero trabajar con el promedio.
-%vtest=medi.vv(:,2);      % Si quiero trabajar con una medición particular.
-
-%figure(5);
-subplot(3,2,3);
-plot(data.tt,vtest);
-xlim([-20,1350]);
-[t0,nn]=ginput;
-t0
-
-data.v=data.vv(data.tt>t0,:);
-data.t=data.tt(data.tt>t0);
-data.t=data.t-data.t(1);
-
-data.vm=mean(data.v,2);
-%close
-
-%--------------------------------------------------------------------------
-
-%-------------Seleccion de datos-------------------------------------------
-
-% Se elige trabajar con el promedio o alguna de las mediciones directas
-
-%x = data.v(:,2);   % Si quiero trabajar con una medicion particular.       <<<-------------------------------------------------------
-x = data.vm;% - 7.2e-1;      % Creo que esto es viejo, no sirve. 
-%x = data.vm;%x = medi.vm+2*ones(size(medi.vm));% Si quiero trabajar con el promedio.   <<<-------------------------------------------------------
-t = data.t;
-deltat = data.dt;
-
-%**************************************************************************
-%------Arranca LP con variables x, t y deltat------------------------------
-
-
-%t=0:0.02:4;
-%t=t';
-
-c1=2e-5;
-c2=1e-5;c3=0.5e-4;cn=8e-15;
-b1=3;
-b2=1;b3=5;
-%frequency scan
-%w11=1*1*pi;w1=zeros(length(t));
-%for j=1:length(t);
- %   w1(j,j)=w11-w11*0.2e-18*j*deltat;
- %  end
-w1=5*2*pi;
-w2=4.5*2*pi;
-p1=pi;
-p2=0.5*pi;
-%generating noise
+% Generate noise
 for i=1:50;
-noise(i,:)=cos(1/(2*deltat)*2*pi*rand.*(t+deltat)');
+    noise(i,:) = cos(1/(2*dt) * 2*pi * rand. * (t+dt)');
 end
 noise=cn*sum(noise);
-%coherent artifact (prop to croscorrelation)
-coherent=1e-15*exp(-t.^2/2/0.07^2);
 
+% Coherent artifact (prop to croscorrelation)
+coherent = 1e-15*exp(-t.^2 / 2 / 0.07^2);
 
 N=length(t); 
 %M=30;
 M=round(0.75*N);
 
+% Desired aspect of solution...
+% x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + c3.*exp(-b3.*t.^2) + noise' + coherent;
+% plot(t,x)
 
-%x=c1.*exp(-b1.*t).*cos(w1*t+p1)+c2.*exp(-b2.*t).*cos(w2.*t+p2)+c3.*exp(-b3.*t.^2)+noise'+coherent;
-
-
-
-%plot(t,x)
-
-%set up matrix from data (N-M)xM. We take M=0.75*N. It is backward prediction
-
-X=zeros(N-M,M);
-
+% Set up matrix from data (N-M)xM. We take M=0.75*N backward prediction.
+X = zeros(N-M,M);
 for i=1:M
     for k=1:N-M
-    X(k,i)=x(i+k);
+        X(k,i)=x(i+k);
     end
-   end
-    
-   
-%computation of the (N-M)x(N-M) noonegativmatrix XX'and diagonalization
+end
 
-XX=X*X';
-[U,D] = eig(XX);
-d=eig(XX);
+% Computation of the (N-M)x(N-M) noonegativmatrix XX' and diagonalization
+XX = X*X';
+[U, D] = eig(XX);
+d = eig(XX);
 
-no=1:length(d);
+%%
+
+no = 1:length(d);
 %figure();
 subplot(3,2,5);
 semilogy(no,d,'o')
@@ -249,8 +197,8 @@ for i=1:length(A)
             
          for j=1:l
 
-            b(j)=log(abs(ss(j)))/deltat;
-            w(j)=angle(ss(j))/deltat;
+            b(j)=log(abs(ss(j)))/dt;
+            w(j)=angle(ss(j))/dt;
 
                  end
               
@@ -307,8 +255,8 @@ for i=1:length(A)
         for i=1:N
 
             for j=1:length(W);
-               Xbar(i,2*j-1)=exp(-B(j)*(i-1)*deltat)*cos(W(j)*(i-1)*deltat);
-               Xbar(i,2*j)=-exp(-B(j)*(i-1)*deltat)*sin(W(j)*(i-1)*deltat);
+               Xbar(i,2*j-1)=exp(-B(j)*(i-1)*dt)*cos(W(j)*(i-1)*dt);
+               Xbar(i,2*j)=-exp(-B(j)*(i-1)*dt)*sin(W(j)*(i-1)*dt);
              
             end
          end
