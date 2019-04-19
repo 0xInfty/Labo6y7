@@ -5,10 +5,13 @@ Created on Wed Apr 17 14:28:53 2019
 @author: LEC
 """
 
+import numpy as np
 from numpy import pi
 import matplotlib.pyplot as plt
 
-def linearPrediction(data, time, dtime):
+#%%
+
+def linearPrediction(x, t, dt):
 
     # Define general parameters
     c1 = 2e-5
@@ -26,64 +29,52 @@ def linearPrediction(data, time, dtime):
     p1 = pi
     p2 = 0.5*pi
     
-    # Generating noise
+    # Generate noise and coherent artifect
     noise = []
     for i in range(50):
-        noise.append(np.cos(2*pi*np.random.rand() * (time+dtime) / (2*dtime)))
+        noise.append(np.cos(2*pi*np.random.rand() * (t+dt) / (2*dt)))
     noise = np.array(noise)
-#    for i=1:50;
-#    noise(i,:)=cos(1/(2*deltat)*2*pi*rand.*(t+deltat)');
-    
     noise = cn * sum(noise)
-    
-    coherent_artifact = 1e-15 * np.exp(-t.^2 / 2 / 0.07^2) 
+    coherent_artifact = 1e-15 * np.exp(-t**2 / 2 / 0.07**2)
     # Proporcional to croscorrelation
-        
-    N = len(t); 
-    M = round(0.75 * N);
     
-#    #x=c1.*exp(-b1.*t).*cos(w1*t+p1)+c2.*exp(-b2.*t).*cos(w2.*t+p2)+c3.*exp(-b3.*t.^2)+noise'+coherent;
-#    
-#    
-#    
-#    #plot(t,x)
-#    
-#    #set up matrix from data (N-M)xM. We take M=0.75*N. It is backward prediction
-#    
-#    X=zeros(N-M,M);
-#    
-#    for i=1:M
-#        for k=1:N-M
-#        X(k,i)=x(i+k);
-#        end
-#       end
-#        
-#       
-#    #computation of the (N-M)x(N-M) noonegativmatrix XX'and diagonalization
-#    
-#    XX=X*X';
-#    [U,D] = eig(XX);
-#    d=eig(XX);
-#    
-#    no=1:length(d);
-#    #figure();
-#    subplot(3,2,5);
-#    semilogy(no,d,'o')
-#    noo=input('no of significant Singular Values: ');
-#    #close
-#    #noo=8;
-#    
-#    F=zeros(noo);
-#    
-#    for j=length(d)-noo+1:length(d)
-#    #for j=1:size(D,1)
-#      F(j,j)=1/sqrt(d(j));# 1 overlambda
-#        end
-#    
-#    
-#    V=X'*U*F;
-#    
-#    
+    """
+    Kind of answer we want:
+    x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
+        + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
+    """
+
+    # Set up matrix from data (N-M) x M. We take M=0.75*N backward prediction
+    N = len(t)
+    M = round(0.75 * N)
+    X = np.zeros( (N-M, M) )
+    for i in range(M):
+        for k in range(N-M):
+            X[k,i] = x[i+k+1]
+
+    # Computation of the (N-M)x(N-M) noonegativmatrix XX' and diagonalization
+    [ev, eV] = np.linalg.eig( np.matmul(X, X.T) )
+    ordered_index = ev.argsort()
+    ev = ev[ordered_index] # eigenvalues
+    eV = eV[:, ordered_index] # eigenvectors on columns
+    eD = np.diag(ev) # diagonal containing eigenvalues
+
+    # XX is np.matmul(X, X.T)
+    # U is ev eigenvalues
+    # D is eV eigenvectors
+    # noo is nsignificant
+
+    # Choose number of singular values    
+    plt.figure()
+    plt.semilogy(ev, linestyle='none', marker='o', 
+                 fillstyle='none', markersize=10)
+    plt.xlabel("Número")
+    plt.ylabel("Autovalores")
+    nsignificant = int(input('¿Número de valores singulares?\t'))
+    
+    F = np.diag(1/np.sqrt(ev[:nsignificant]))
+    U = np.matmul(X, eV*F)
+
 #    #computation of LP coeficients
 #    
 #    xvector=x(1:N-M);
