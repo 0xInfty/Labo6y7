@@ -190,6 +190,27 @@ for i=1:length(W)
    %end
 end
 
+yy = yy';
+Y = sum(yy);
+Chi2=sum((Y-x').^2)/N
 
-yy=yy';
-Y=sum(yy);
+%%
+
+% up to here the programm, ahead calculations to evaluate if the fit is good enough
+
+%calculation of the residue for evaluating the fit
+
+residue=x'-Y;
+
+%FFt of the residue
+
+%Y1 = fft(residue,4096);
+Y1=fft(residue);
+NN=length(Y1);
+Pyy= Y1.*conj(Y1)/(NN-1);
+frequ = 1/(t(2)-t(1))/NN*(0:((NN/2)-1))*100/3*30;%in GHz
+FFTResidue=Pyy(1:NN/2);
+frequ=frequ';
+%figure;
+subplot(3,2,4);
+plot(frequ,Pyy(1:NN/2));title('FFT of the Residue');xlabel('freq (GHz)');ylabel('FFT');

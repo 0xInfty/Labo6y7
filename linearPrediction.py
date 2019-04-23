@@ -7,33 +7,30 @@ Created on Wed Apr 17 14:28:53 2019
 
 from numpy import pi
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 #%%
 
 # Get data
 t, x = np.loadtxt('Datos.txt')
 dt = 1
+T = max(t) - min(t)
 
 #%%
 
 # Define general parameters
-cn = 8e-15
-noise = []
-for i in range(50):
-    noise.append(np.cos(2*pi*np.random.rand() * (t+dt) / (2*dt)))
-noise = np.array(noise)
-noise = cn * sum(noise)
-coherent_artifact = 1e-15 * np.exp(-t**2 / 2 / 0.07**2)
+#cn = 8e-15
+#noise = []
+#for i in range(50):
+#    noise.append(np.cos(2*pi*np.random.rand() * (t+dt) / (2*dt)))
+#noise = np.array(noise)
+#noise = cn * sum(noise)
+#coherent_artifact = 1e-15 * np.exp(-t**2 / 2 / 0.07**2)
 # Proporcional to cross-correlation
 
-"""
-Kind of answer we want:
-x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
-    + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
-"""
-
-#%%
+# Kind of answer we want:
+# x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
+#     + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
 
 # -----------------------------------------------------------------------------
 # FREQUENCIES AND DAMPING FACTORS
@@ -194,8 +191,17 @@ solutions = np.array([a * np.exp(-b*t) * np.cos(omega*t + phi)
                                                  phases)]).T
 total_solution = sum(solutions.T)
 
+#%%
+
 # Statistics
 square_chi = sum( (total_solution - x)**2 ) / N
 residue = x - total_solution
+residue_transform = np.fft.rfft(residue)
+residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
+plt.plot(residue_frequencies, residue_transform)
+
+# I BELIEVE THE ORIGINAL FFT WAS FAULTY!
+
+#%%
 
 # MISSING STATISTICS AND PLOTS BUT THAT'S IT :)
