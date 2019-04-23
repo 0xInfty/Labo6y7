@@ -130,16 +130,13 @@ for i, b, omega in zip(range(Nsolutions), damping_constants, frequencies):
 
 #%%
 
-# Diagonalize square modelled data matrix
-[eigenvalues2, eigenvectors2] = np.linalg.eig( np.matmul(X2, X2.T) )
-ordered_index = abs(eigenvalues2).argsort() # From smallest to largest absolute
+# Diagonalize square Hermitian modelled data matrix
+[eigenvalues2, eigenvectors2] = np.linalg.eigh( np.matmul(X2, X2.T) )
+ordered_index = eigenvalues2.argsort() # From smallest to largest absolute
 eigenvalues2 = eigenvalues2[ordered_index] # Eigenvalues
 eigenvectors2 = eigenvectors2[:, ordered_index] # Eigenvectors on columns
-eigenvectors2 = np.array([l/l[0] for l in eigenvectors2.T]).T # Normalize
+#eigenvectors2 = np.array([l/l[0] for l in eigenvectors2.T]).T # Normalize
 rank2 = np.linalg.matrix_rank(np.diag(eigenvalues2)) # Size measure
-
-# $&@%!! COMPLEX EIGENVALUES AND EIGENVECTORS >.<
-# WE REALLY, REALLY HAVE TO LOOK FOR ANOTHER METHOD!
 
 #%%
 
@@ -149,7 +146,7 @@ Nsignificant2 = np.linalg.matrix_rank( np.matmul(X2, X2.T) )
 # Crop data according to it
 F2 = np.zeros((N, N))
 F2[-Nsignificant2:,-Nsignificant2:] = np.diag(
-        1/np.sqrt(abs(eigenvalues2[-Nsignificant2:])))
+        1/np.sqrt(eigenvalues2[-Nsignificant2:]))
 auxiliar = np.matmul(eigenvectors2, F2)
 U2 = np.matmul(X2.T, auxiliar) # Xmatrix.T * eigenvectors * F
 
@@ -169,17 +166,19 @@ phases = []
 for i in range(Nsolutions):
     
     if A2[2*i]==0 and A2[2*i+1]==0:
-        amplitudes[i] == 0
-        phases[i] == 0
+        amplitudes.append( 0 )
+        phases.append( 0 )
     elif A2[2*i]==0:
-        amplitudes[i] = abs(A2[2*i+1])
-        phases[i] = np.sign(A2[2*i+1]) * pi/2
+        amplitudes.append( abs(A2[2*i+1]) )
+        phases.append( np.sign(A2[2*i+1]) * pi/2 )
     elif A2[2*i+1]==0:
-        amplitudes[i] = abs(A2[2*i])
-        phases[i] = (1-np.sign(A2[2*i])) * pi/2
+        amplitudes.append( abs(A2[2*i]) )
+        phases.append( (1-np.sign(A2[2*i])) * pi/2 )
     else:
-        amplitudes[i] = np.sqrt(A2[2*i+1]**2 + A2(2*i)**2)
-        phases[i] = np.arctan2(A2[2*i+1], A2(2*i))
+        amplitudes.append( np.sqrt(A2[2*i+1]**2 + A2[2*i]**2) )
+        phases.append( np.arctan2(A2[2*i+1], A2[2*i]) )
+amplitudes = np.array(amplitudes)
+phases = np.array(phases)
 
 #%%
 
@@ -188,8 +187,8 @@ for i in range(Nsolutions):
 # -----------------------------------------------------------------------------
 
 # Solution
-solutions = np.array([a * np.exp(-b*t) * np.cos(omega*t + fi)
-                      for a, b, omega, fi in zip(amplitudes,
+solutions = np.array([a * np.exp(-b*t) * np.cos(omega*t + phi)
+                      for a, b, omega, phi in zip(amplitudes,
                                                  damping_constants,
                                                  frequencies,
                                                  phases)]).T

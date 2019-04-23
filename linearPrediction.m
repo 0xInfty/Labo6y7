@@ -64,7 +64,7 @@ l=rank(D);
 for i=1:length(s)
     ss(i)=s(length(s)-i+1);    
 end
-ss = ss' % sorted from largest to smallest absolute value
+ss = ss'; % sorted from largest to smallest absolute value
 
 %%
 
@@ -180,3 +180,16 @@ for i=1:length(W)
     end
     end
 
+%%
+
+for i=1:length(W)
+   %if W(i)<40
+      yy(:,i)=C(i).*exp(-B(i).*t).*cos(W(i).*t+fi(i));
+   %else
+   %      yy(:,i)=0*t;
+   %end
+end
+
+
+yy=yy';
+Y=sum(yy);
