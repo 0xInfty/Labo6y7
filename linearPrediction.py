@@ -9,12 +9,51 @@ from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
 
+def roundMatlab(x, Matlab_round_needed=True):
+    """Returns round value in Matlab 2014's style.
+    
+    In Pyhon 3.7.3...
+    >> round(80.5) = 80
+    >> round(81.5) = 82
+    
+    But in Matlab 2014...
+    >> round(80.5) = 81
+    >> round(81.5) = 82
+    
+    Parameters
+    ----------
+    x : float
+        Number to be rounded.
+    Matlab_round_needed=True : bool
+        Whether your Python version needs this function to round like Matlab 
+        or not. Python 3.7.3 needs it.
+    
+    Returns
+    -------
+    y : int
+        Rounded number.
+    """
+    
+    xround = int(x)
+    even = xround/2 == int(xround/2) # True if multiple of 2
+    
+    if even:
+        y = round(x) + 1
+    else:
+        y = round(x)
+    
+    if Matlab_round_needed:
+        return y
+    else:
+        return round(x)
+
 #%%
 
 # Get data
 t, x = np.loadtxt('Datos.txt')
-dt = 1
+dt = 2
 T = max(t) - min(t)
+Matlab_round_needed = True # Python 3.7.3 needs it
 
 #%%
 
@@ -46,7 +85,7 @@ X = np.array([x[i+j+1] for j in range(N-M) for i in range(M)]).reshape((N-M,M))
 ordered_index = eigenvalues.argsort() # From smallest to largest value 
 eigenvalues = eigenvalues[ordered_index] # Eigenvalues
 eigenvectors = eigenvectors[:, ordered_index] # Eigenvectors on columns
-eigenvectors = np.array([l/l[0] for l in eigenvectors.T]).T # Normalize
+#eigenvectors = np.array([l/l[0] for l in eigenvectors.T]).T # Normalize
 rank = np.linalg.matrix_rank(np.diag(eigenvalues)) # Size measure
 
 """
@@ -100,8 +139,12 @@ damping_constants = damping_constants[ordered_index]
 
 # Crop them according to number of real roots and rank of diagonalized matrix
 Nzeros = len(frequencies) - np.count_nonzero(frequencies)
-frequencies = abs(frequencies)[:int(round((rank-Nzeros)/2+Nzeros))]
-damping_constants = damping_constants[:int(round((rank-Nzeros)/2+Nzeros))]
+frequencies = abs(frequencies)[:int(roundMatlab(
+        (rank-Nzeros)/2+Nzeros,
+        Matlab_round_needed))]
+damping_constants = damping_constants[:int(roundMatlab(
+        (rank-Nzeros)/2+Nzeros,
+        Matlab_round_needed))]
 
 # Then crop them according to the number of positive or zero damping constants
 Npositives = len(damping_constants[damping_constants>=0])
@@ -132,7 +175,7 @@ for i, b, omega in zip(range(Nfit_terms), damping_constants, frequencies):
 ordered_index = eigenvalues2.argsort() # From smallest to largest absolute
 eigenvalues2 = eigenvalues2[ordered_index] # Eigenvalues
 eigenvectors2 = eigenvectors2[:, ordered_index] # Eigenvectors on columns
-eigenvectors2 = np.array([l/l[0] for l in eigenvectors2.T]).T # Normalize
+#eigenvectors2 = np.array([l/l[0] for l in eigenvectors2.T]).T # Normalize
 rank2 = np.linalg.matrix_rank(np.diag(eigenvalues2)) # Size measure
 
 #%%
@@ -184,7 +227,7 @@ phases = np.array(phases)
 # -----------------------------------------------------------------------------
 
 # Solution
-fit_terms = np.array([a * np.exp(-b*t) * np.cos(omega*t + phi)
+fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
                      for a, b, omega, phi in zip(amplitudes,
                                                  damping_constants,
                                                  frequencies,
@@ -196,21 +239,9 @@ square_chi = sum( (fit - x)**2 ) / N # Best if absolute is smaller
 
 # Statistics of the residue
 residue = x - fit
-residue_transform = np.fft.rfft(residue)
+residue_transform = abs(np.fft.rfft(residue))
 residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
 plt.plot(residue_frequencies, residue_transform)
-
-"""
-Y1=fft(residue);
-NN=length(Y1);
-Pyy= Y1.*conj(Y1) / (NN-1);
-frequ = 1/(NN*(t(2)-t(1))) * (0:((NN/2)-1)) * 1000; %in GHz
-FFTResidue=Pyy(1:NN/2);
-plot(frequ, Pyy(1:NN/2))
-"""
-
-# I BELIEVE THE ORIGINAL FFT WAS FAULTY!
-# OURS GOES UP TO 500 AND THE OLD ONE GOES TO 250.
 
 #%%
 

@@ -25,12 +25,12 @@ XX = X * X';
 [U, D] = eig(XX);
 d = eig(XX);
 
-for i = 1:length(d)
-    hey = U(1,i);
-    hello = U(:,i);
-    U(:,i) = hello/hey;
-end
-clear hello hey
+% for i = 1:length(d)
+%     hey = U(1,i);
+%     hello = U(:,i);
+%     U(:,i) = hello/hey;
+% end
+% clear hello hey
 
 %%
 
@@ -68,7 +68,7 @@ ss = ss'; % sorted from largest to smallest absolute value
 
 %%
 
-dtime = 1;
+dtime = 2;
 
 for j=1:l
  
@@ -184,7 +184,7 @@ for i=1:length(W)
 
 for i=1:length(W)
    %if W(i)<40
-      yy(:,i)=C(i).*exp(-B(i).*t).*cos(W(i).*t+fi(i));
+      yy(:,i)=C(i).*exp(-B(i).*(t-t(1))).*cos(W(i).*(t-t(1))+fi(i));
    %else
    %      yy(:,i)=0*t;
    %end
