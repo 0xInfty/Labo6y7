@@ -8,6 +8,7 @@ Created on Wed Apr 17 14:28:53 2019
 from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import CheckButtons
 
 def roundMatlab(x, Matlab_round_needed=True):
     """Returns round value in Matlab 2014's style.
@@ -51,13 +52,15 @@ def roundMatlab(x, Matlab_round_needed=True):
 
 # Get data
 t, x = np.loadtxt('Datos.txt')
-dt = 2
+dt = 2 # in ps
 T = max(t) - min(t)
 Matlab_round_needed = True # Python 3.7.3 needs it
 
-#%%
+## Kind of answer we want...
+#x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
+#    + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
 
-# Define general parameters
+## To do that we could define...
 #cn = 8e-15
 #noise = []
 #for i in range(50):
@@ -67,11 +70,7 @@ Matlab_round_needed = True # Python 3.7.3 needs it
 #coherent_artifact = 1e-15 * np.exp(-t**2 / 2 / 0.07**2)
 # Proporcional to cross-correlation
 
-# Kind of answer we want:
-# x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
-#     + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
-
-# -----------------------------------------------------------------------------
+#%% ---------------------------------------------------------------------------
 # FREQUENCIES AND DAMPING FACTORS
 # -----------------------------------------------------------------------------
 
@@ -93,8 +92,6 @@ La segunda columna de eV la tengo con signo invertido respecto a Matlab.
 ==> Obtengo resultados distintos para U.
 """
 
-#%%
-
 # Choose number of significant values
 Nsignificant = 4
 #plt.figure()
@@ -110,8 +107,6 @@ F[-Nsignificant:,-Nsignificant:] = np.diag(1/np.sqrt(eigenvalues[-Nsignificant:]
 auxiliar = np.matmul(eigenvectors, F)
 U = np.matmul(X.T, auxiliar) # Xmatrix.T * eigenvectors * F
 
-#%%
-
 # Define polinomyal
 auxiliar = np.matmul(eigenvectors.T, x[:N-M])
 auxiliar = np.matmul(F.T, auxiliar)
@@ -124,22 +119,20 @@ roots = np.roots(coeficients)
 ordered_index = abs(roots).argsort() 
 roots = roots[ordered_index][::-1] # From largest to smallest absolute value
 
-#%%
-
 # Calculate damping constants 'b' and frequencies 'omega'
 damping_constants = (np.log(abs(roots)) / dt)[:rank] # Crop them accordingly
-frequencies = (np.angle(roots) / dt)[:rank]
+angular_frequencies = (np.angle(roots) / dt)[:rank]
 
 #%%
 
 # Sort them
-ordered_index = frequencies.argsort() # From smallest to largest frequency
-frequencies = frequencies[ordered_index]
+ordered_index = angular_frequencies.argsort() # From smallest to largest freq
+angular_frequencies = angular_frequencies[ordered_index]
 damping_constants = damping_constants[ordered_index]
 
 # Crop them according to number of real roots and rank of diagonalized matrix
-Nzeros = len(frequencies) - np.count_nonzero(frequencies)
-frequencies = abs(frequencies)[:int(roundMatlab(
+Nzeros = len(angular_frequencies) - np.count_nonzero(angular_frequencies)
+angular_frequencies = abs(angular_frequencies)[:int(roundMatlab(
         (rank-Nzeros)/2+Nzeros,
         Matlab_round_needed))]
 damping_constants = damping_constants[:int(roundMatlab(
@@ -150,25 +143,26 @@ damping_constants = damping_constants[:int(roundMatlab(
 Npositives = len(damping_constants[damping_constants>=0])
 ordered_index = damping_constants.argsort()[::-1] # From largest to smallest
 damping_constants = damping_constants[ordered_index][:Npositives]
-frequencies = frequencies[ordered_index][:Npositives]
+angular_frequencies = angular_frequencies[ordered_index][:Npositives]
 
 # Now I have the smallest frequencies and largest damping constants
+# Then I calculate the characteristic time tau and the quality factor Q
+quality_factors = angular_frequencies / (2*damping_constants)
+characteristic_times = 1 / damping_constants # in ps
 
-#%%
-
-# -----------------------------------------------------------------------------
+#%% ---------------------------------------------------------------------------
 # AMPLITUDES AND PHASES
 # -----------------------------------------------------------------------------
 
 # Create modelled data matrix
-Nfit_terms = len(frequencies)
+Nfit_terms = len(angular_frequencies)
 t2 = np.arange(0, N*dt, dt) # Time starting on zero
 X2 = np.zeros((N, 2*Nfit_terms))
-for i, b, omega in zip(range(Nfit_terms), damping_constants, frequencies):
+for i, b, omega in zip(range(Nfit_terms), 
+                       damping_constants, 
+                       angular_frequencies):
     X2[:, 2*i] = np.exp(-b*t2) * np.cos(omega*t2)
     X2[:, 2*i+1] = -np.exp(-b*t2) * np.sin(omega*t2)
-
-#%%
 
 # Diagonalize square Hermitian modelled data matrix
 [eigenvalues2, eigenvectors2] = np.linalg.eigh( np.matmul(X2, X2.T) )
@@ -177,8 +171,6 @@ eigenvalues2 = eigenvalues2[ordered_index] # Eigenvalues
 eigenvectors2 = eigenvectors2[:, ordered_index] # Eigenvectors on columns
 #eigenvectors2 = np.array([l/l[0] for l in eigenvectors2.T]).T # Normalize
 rank2 = np.linalg.matrix_rank(np.diag(eigenvalues2)) # Size measure
-
-#%%
 
 # Choose number of significant values
 Nsignificant2 = np.linalg.matrix_rank( np.matmul(X2, X2.T) )
@@ -190,15 +182,11 @@ F2[-Nsignificant2:,-Nsignificant2:] = np.diag(
 auxiliar = np.matmul(eigenvectors2, F2)
 U2 = np.matmul(X2.T, auxiliar) # Xmatrix.T * eigenvectors * F
 
-#%%
-
 # Get defining vector
 auxiliar = np.matmul(eigenvectors2.T, x)
 auxiliar = np.matmul(F2.T, auxiliar)
 A2 = np.matmul(U2, auxiliar) # U * F.T * eigenvectors.T * xvector 
 # |--> Least-Squares?
-
-#%%
 
 # Calculate phases 'phi' and amplitudes 'C'
 amplitudes = []
@@ -219,73 +207,77 @@ for i in range(Nfit_terms):
         phases.append( np.arctan2(A2[2*i+1], A2[2*i]) )
 amplitudes = np.array(amplitudes)
 phases = np.array(phases)
+pi_phases = phases / pi # in radians written as multiples of pi
 
-#%%
-
+#%% ---------------------------------------------------------------------------
+# FIT, PLOTS AND STATISTICS
 # -----------------------------------------------------------------------------
-# SOLUTION, PLOTS AND STATISTICS
-# -----------------------------------------------------------------------------
 
-# Solution
 fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
                      for a, b, omega, phi in zip(amplitudes,
                                                  damping_constants,
-                                                 frequencies,
+                                                 angular_frequencies,
                                                  phases)]).T
 fit = sum(fit_terms.T)
 square_chi = sum( (fit - x)**2 ) / N # Best if absolute is smaller
 
-#%%
-
-# Statistics of the residue
-residue = x - fit
-residue_transform = abs(np.fft.rfft(residue))
-residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
-plt.plot(residue_frequencies, residue_transform)
-
-#%%
+## Statistics of the residue
+#residue = x - fit
+#residue_transform = abs(np.fft.rfft(residue))
+#residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
+#plt.plot(residue_frequencies, residue_transform)
 
 # Raman-like Spectrum parameters
-f_damping_constants = 1000 * damping_constants / (2*pi) #in GHz
-f_frequencies = 1000 * frequencies / (2*pi) #in GHz
-f_max = max(f_frequencies)
-f_independent = np.arange(0, 1.5*f_max, f_max/1000)
+frequencies_damping = 1000 * damping_constants / (2*pi) # in GHz
+frequencies = 1000 * angular_frequencies / (2*pi) # in GHz
+max_frequency = max(frequencies)
+raman_frequencies = np.arange(0, 1.5*max_frequency, max_frequency/1000)
 
 # Raman-like Spectrum per se
-response = np.zeros( (len(f_independent), Nfit_terms) )
+raman_spectrum_terms = np.zeros((len(raman_frequencies), Nfit_terms))
 for i in range(Nfit_terms):
-   if frequencies[i]==0:
-      response[:,i] = 0
+   if angular_frequencies[i]==0:
+      raman_spectrum_terms[:,i] = 0
    else:
-      response[:,i] = amplitudes[i] * np.imag( phases[i] / 
-         (f_frequencies[i]**2 - f_independent**2 - 
-          2j * f_independent * f_damping_constants[i]))
-spectrum = np.sum(response, axis=1)
+      raman_spectrum_terms[:,i] = amplitudes[i] * np.imag( 
+         frequencies[i] / 
+         (frequencies[i]**2 - raman_frequencies**2 - 
+         2j * raman_frequencies * frequencies_damping[i]))
+raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 
-plt.plot(f_independent, spectrum)
+#%%
 
-"""
-b = B * 1000 / (2*pi); %in GHz
-f = W * 1000 / (2*pi); %in GHz
-Wmax = max(f);
-freq = 0 : fMAX/1000 : 1.5*fMAX; %in GHz
-freq=freq';
+# Make pretty graphs :D
+fig = plt.figure()
+grid = plt.GridSpec(3, 2, wspace=0.4, hspace=0.3)
 
-res = zeros(length(freq), length(W));
+plt.subplot(grid[0,:])
+plt.plot(raman_frequencies, raman_spectrum)
 
-for i=1:length(W)
-   if W(i)==0
-      res(:,i)=0;
-   else 
-      %res(:,i)=C(i)*imag(1i*exp(-1i*fi(i))*f(i)./(f(i)^2-freq.^2-2j.*freq*b(i)));
-      res(:,i)=C(i)*imag(1*f(i)./(f(i)^2-freq.^2-2j.*freq*b(i)));
-  end
-  end
-  
-  spectrum=sum(res,2);
-%figure;
-subplot(3,2,6);
-plot(freq,spectrum,freq,res);title('Raman-like Data Spectrum');xlabel('freq (GHz)');ylabel('spectrum');
-"""
+plt.subplot(grid[1:,:])
+ldata, = plt.plot(t, x)
+lfit, = plt.plot(t, fit)
+lfit_terms = plt.plot(t, fit_terms)
+for l in lfit_terms: l.set_visible(False)
 
-# THIS PART DOES DEFINITELY NOT WORK >.<
+rax = plt.axes([0.05, 0.4, 0.1, 0.15])
+check = CheckButtons(rax, ('Data', 
+                           'Ajuste', 
+                           *['Término {:.0f}'.format(i+1) 
+                               for i in range(Nfit_terms)]), 
+                    (True, True, *[False for i in range(Nfit_terms)]))
+
+
+def func(label):
+    if label == 'Data':
+        ldata.set_visible(not ldata.get_visible())
+    elif label == 'Ajuste':
+        lfit.set_visible(not lfit.get_visible())
+    else:
+        for i in range(Nfit_terms):
+            if label == 'Término {:.0f}'.format(i+1):
+                lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
+    plt.draw()
+check.on_clicked(func)
+
+plt.show()
