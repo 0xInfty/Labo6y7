@@ -190,18 +190,38 @@ solutions = np.array([a * np.exp(-b*t) * np.cos(omega*t + phi)
                                                  frequencies,
                                                  phases)]).T
 total_solution = sum(solutions.T)
+square_chi = sum( (total_solution - x)**2 ) / N # Best if absolute is smaller
 
 #%%
 
-# Statistics
-square_chi = sum( (total_solution - x)**2 ) / N
+# Statistics of the residue
 residue = x - total_solution
 residue_transform = np.fft.rfft(residue)
-residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
+residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) / (2*pi) # in GHz
 plt.plot(residue_frequencies, residue_transform)
 
 # I BELIEVE THE ORIGINAL FFT WAS FAULTY!
+# DOES THIS CARRY 2PI OR NOT?
 
 #%%
 
-# MISSING STATISTICS AND PLOTS BUT THAT'S IT :)
+# Raman-like Spectrum parameters
+f_damping_constants = 1000 * damping_constants / (2*pi) #in GHz
+f_frequencies = 1000 * frequencies / (2*pi) #in GHz
+f_max = max(f_frequencies)
+f_independent = np.arange(0, 1.5*f_max, f_max/1000)
+
+# Raman-like Spectrum per se
+response = np.zeros( (len(f_independent), Nsolutions) )
+for i in range(Nsolutions):
+   if frequencies[i]==0:
+      response[:,i] = 0
+   else:
+      response[:,i] = amplitudes[i] * np.imag( phases[i] / 
+         (f_frequencies[i]**2 - f_independent**2 - 
+          2j * f_independent * f_damping_constants[i]))
+spectrum = np.sum(response, axis=1)
+
+plt.plot(f_independent, spectrum)
+
+# THIS PART DOES DEFINITELY NOT WORK >.<
