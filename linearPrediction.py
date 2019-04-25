@@ -7,7 +7,6 @@ Created on Wed Apr 17 14:28:53 2019
 
 from numpy import pi
 import numpy as np
-from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 
@@ -250,24 +249,18 @@ raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 
 # Make pretty graphs :D
 fig = plt.figure()
-grid = plt.GridSpec(3, 5, hspace=0.1)
+grid = plt.GridSpec(3, 2, wspace=0.4, hspace=0.3)
 
-ax_spectrum = plt.subplot(grid[0,:4])
+plt.subplot(grid[0,:])
 plt.plot(raman_frequencies, raman_spectrum)
-plt.xlabel("Frecuencia (GHz)")
-plt.ylabel("Amplitud (u.a.)")
-ax_spectrum.xaxis.tick_top()
-ax_spectrum.xaxis.set_label_position('top')
 
-ax_data = plt.subplot(grid[1:,:])
+plt.subplot(grid[1:,:])
 ldata, = plt.plot(t, x)
 lfit, = plt.plot(t, fit)
 lfit_terms = plt.plot(t, fit_terms)
 for l in lfit_terms: l.set_visible(False)
-plt.xlabel("Tiempo (ps)")
-plt.ylabel(r"Voltaje ($\mu$V)")
 
-rax = plt.axes([0.75, 0.628, 0.155, 0.245])
+rax = plt.axes([0.05, 0.4, 0.1, 0.15])
 check = CheckButtons(rax, ('Data', 
                            'Ajuste', 
                            *['Término {:.0f}'.format(i+1) 
