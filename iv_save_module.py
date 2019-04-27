@@ -12,6 +12,8 @@ Pero el voltaje está en V
 `\(T.T)/´
 """
 
+import iv_plot_module as ivp
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 
@@ -241,4 +243,23 @@ def loadNicePumpProbe(filename):
                         nsize=nsize,
                         nrepetitions=nrepetitions))
     
+    return t, V, meanV, details
+
+#%%
+        
+def loadZeroPumpProbe(filename, autoclose=True):
+    
+    t, V, meanV, details = loadNicePumpProbe(filename)[0]
+    fig = ivp.plotPumpProbe(filename, save=False)
+    ax = fig.axes[0]
+    t0 = ivp.interactiveValueSelector(ax, y_value=False)
+    t0 = t[np.argmin(abs(t-t0))]
+    
+    if autoclose:
+        plt.close(fig)
+
+    V = V[t>=t0, :]
+    meanV = meanV[t>=t0]
+    t = t[t>=t0]
+
     return t, V, meanV, details

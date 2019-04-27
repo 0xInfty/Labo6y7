@@ -1,8 +1,6 @@
 import iv_analysis_module as iva
 import iv_plot_module as ivp
 import iv_save_module as ivs
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Cursor
 import os
 
 #%% PARAMETERS --------------------------------------------------------------------
@@ -19,26 +17,8 @@ round_Matlab_needed = True # Pyhon 3.6.2 needs it
 
 # Load data
 filename = os.path.join(path, name)
-t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+t, V, meanV, details = ivs.loadZeroPumpProbe(filename)
 dt = details['dt']
-
-# Select t0
-fig = ivp.plotPumpProbe(filename, save=False)
-ax = fig.axes[0]
-ax.autoscale(False)
-cursor = Cursor(ax, useblit=True, linestyle='--', color='red', linewidth=2)
-cursor.horizOn = False
-plt.show()
-t0 = plt.ginput()[0][0]
-plt.vlines(t0, ax.get_ylim()[0], ax.get_ylim()[1], 
-           linestyle='--', linewidth=2, color='red')
-cursor.visible = False
-cursor.active = False
-
-# Crop data
-V = V[t>=t0, :]
-meanV = meanV[t>=t0]
-t = t[t>=t0]
 
 #%% LINEAR PREDICTION -------------------------------------------------------------
 

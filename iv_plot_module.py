@@ -5,11 +5,41 @@ Created on Mon Apr 15 15:08:08 2019
 @author: LEC
 """
 
-import iv_save_module as ivs
+from iv_save_module import freeFile, loadNicePumpProbe
 import matplotlib.pyplot as plt
 import matplotlib.widgets as wid
 import os
 from tkinter import Tk, messagebox
+
+#%%
+
+def interactiveValueSelector(ax, x_value=True, y_value=True):
+    
+    ax.autoscale(False)
+    cursor = wid.Cursor(ax, useblit=True, 
+                        linestyle='--', color='red', linewidth=2)
+    if not y_value:
+        cursor.horizOn = False
+    if not x_value:
+        cursor.vertOn = False
+    plt.show()
+    
+    values = plt.ginput()[0]
+    if x_value:
+        plt.vlines(values[0], ax.get_ylim()[0], ax.get_ylim()[1], 
+                   linestyle='--', linewidth=2, color='red')
+    if y_value:
+        plt.hlines(values[1], ax.get_xlim()[0], ax.get_xlim()[1], 
+                   linestyle='--', linewidth=2, color='red')
+    cursor.visible = False
+    cursor.active = False
+
+    if x_value and y_value:
+        return values
+    elif x_value:
+        return values[0]
+    else:
+        return values[1]
 
 #%%
 
@@ -42,7 +72,7 @@ def plotPumpProbe(filename, save=True):
     
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+    t, V, meanV, details = loadNicePumpProbe(filename)
     Nrepetitions = details['Nrepetitions']
     
     fig = plt.figure()
@@ -93,7 +123,7 @@ def fullplotPumpProbe(filename, save=True):
     
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+    t, V, meanV, details = loadNicePumpProbe(filename)
     Nrepetitions = details['Nrepetitions']
     
     fig = plt.figure()
@@ -229,8 +259,8 @@ def linearPredictionPlot(filename, others, autosave=True):
         newpath = os.path.join(path, 'Figuras')
         if not os.path.isdir(newpath):
             os.makedirs(newpath)
-        newfilename = ivs.freeFile(os.path.join(newpath, name+'_fit.png'),
-                                   newformat='{}__{}')
+        newfilename = freeFile(os.path.join(newpath, name+'_fit.png'),
+                               newformat='{}__{}')
         ax_save.set_visible(False)
         plt.savefig(newfilename, bbox_inches='tight')
         ax_save.set_visible(True)

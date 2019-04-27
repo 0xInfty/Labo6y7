@@ -5,6 +5,9 @@ Created on Wed Apr 17 14:28:53 2019
 @author: LEC
 """
 
+import ivs_plot_module as ivp
+import ivs_save_module as ivs
+import matplotlib.pyplot as plt
 from numpy import pi
 import numpy as np
 
