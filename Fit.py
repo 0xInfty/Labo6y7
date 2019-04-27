@@ -1,20 +1,27 @@
+import iv_save_module as ivs
+from linearPrediction import linearPrediction, linearPredictionPlot
 from loadPumpProbe import loadPumpProbe
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Cursor
 import numpy as np
 import os
 import plot_module as ivplot
-#from scipy.signal import detrend
 
-file = 'M_20190408_03.txt';
+#%% PARAMETERS --------------------------------------------------------------------
+
+name = 'M_20190408_03.txt'
 path = os.getcwd()
+autoclose = True
+autosave = True
+round_Matlab_needed = True # Pyhon 3.6.2 needs it
 
 #max_nrepetitions = 3 # BEWARE OF FALSE COLUMNS!
 
-#%% LOAD DATA --------------------------------------------------------------
+#%% LOAD AND CROP DATA ------------------------------------------------------------
 
-# First get data's name
-[data, details] = loadPumpProbe(os.path.join(path,file))
+# Load data
+filename = os.path.join(path, name)
+[data, details] = loadPumpProbe(filename)
 
 # Define data size
 nrepetitions = int(len(data[0,:]) / 2) # Number of measurements
@@ -40,7 +47,7 @@ V = np.array([1e6 * data[:, 2*i+1] for i in range(nrepetitions)]).T
 meanV = np.mean(V, axis=1)
 
 # Select t0
-fig = ivplot.plotPumpProbe(os.path.join(path,file), save=False)
+fig = ivplot.plotPumpProbe(filename, save=False)
 ax = fig.axes[0]
 ax.autoscale(False)
 cursor = Cursor(ax, useblit=True, linestyle='--', color='red', linewidth=2)
@@ -56,6 +63,16 @@ cursor.active = False
 V = V[t>=t0, :]
 meanV = meanV[t>=t0]
 t = t[t>=t0]
+
+#%% LINEAR PREDICTION -------------------------------------------------------------
+
+# Use linear prediction
+results, others = linearPrediction(t, meanV, dt, 
+                                   autoclose=autoclose,
+                                   round_Matlab_needed=round_Matlab_needed)
+
+#%% Plot linear prediction
+linearPredictionPlot(filename, others, autosave=autosave)
 
 #%% PMUSIC -----------------------------------------------------------------
 
