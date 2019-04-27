@@ -1,11 +1,9 @@
+import iv_analysis_module as iva
+import iv_plot_module as ivp
 import iv_save_module as ivs
-from linearPrediction import linearPrediction, linearPredictionPlot
-from loadPumpProbe import loadPumpProbe
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Cursor
-import numpy as np
 import os
-import plot_module as ivplot
 
 #%% PARAMETERS --------------------------------------------------------------------
 
@@ -21,33 +19,11 @@ round_Matlab_needed = True # Pyhon 3.6.2 needs it
 
 # Load data
 filename = os.path.join(path, name)
-[data, details] = loadPumpProbe(filename)
-
-# Define data size
-nrepetitions = int(len(data[0,:]) / 2) # Number of measurements
-nsize = len(data[:,0]) # Length of each measurement
-
-#%% GET TIME AND VOLTAGE ---------------------------------------------------
-
-# Get time
-t = data[:,0] # Consider just one time column
-
-# Define time parameters
-T = t[-1] - t[0] # Total time
-samplerate = nsize / T  # Sampling rate
-dt = T / nsize # Time step
-
-# Make equispaced time
-t = np.linspace(t[0], t[-1], nsize)
-
-# Add uV voltage
-V = np.array([1e6 * data[:, 2*i+1] for i in range(nrepetitions)]).T
-
-# Add mean 
-meanV = np.mean(V, axis=1)
+t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+dt = details['dt']
 
 # Select t0
-fig = ivplot.plotPumpProbe(filename, save=False)
+fig = ivp.plotPumpProbe(filename, save=False)
 ax = fig.axes[0]
 ax.autoscale(False)
 cursor = Cursor(ax, useblit=True, linestyle='--', color='red', linewidth=2)
@@ -67,12 +43,12 @@ t = t[t>=t0]
 #%% LINEAR PREDICTION -------------------------------------------------------------
 
 # Use linear prediction
-results, others = linearPrediction(t, meanV, dt, 
-                                   autoclose=autoclose,
-                                   round_Matlab_needed=round_Matlab_needed)
+results, others = iva.linearPrediction(t, meanV, dt, 
+                                      autoclose=autoclose,
+                                      round_Matlab_needed=round_Matlab_needed)
 
 #%% Plot linear prediction
-linearPredictionPlot(filename, others, autosave=autosave)
+ivp.linearPredictionPlot(filename, others, autosave=autosave)
 
 #%% PMUSIC -----------------------------------------------------------------
 

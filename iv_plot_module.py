@@ -6,7 +6,6 @@ Created on Mon Apr 15 15:08:08 2019
 """
 
 import iv_save_module as ivs
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as wid
 import os
@@ -14,7 +13,7 @@ from tkinter import Tk, messagebox
 
 #%%
 
-def plotPumpProbe(file, save=True):
+def plotPumpProbe(filename, save=True):
 
     """Plots all PumpProbe experiments from a file and its mean.
         
@@ -41,21 +40,15 @@ def plotPumpProbe(file, save=True):
     
     """
     
-    path = os.path.join(os.path.split(file)[0], 'Figuras')
-    name = os.path.split(os.path.splitext(file)[0])[-1]
-    data = ivs.loadPumpProbe(file)[0]
-    
-    N = len(data[0,:]) // 2 # Number of experiments
-    
-    t = np.array([data[:,2*i] for i in range(N)]).T
-    V = np.array([data[:,2*i+1] for i in range(N)]).T * 1e6
-    meanV = np.mean(V, axis=1)
-    meant = t[:,0]
+    path = os.path.join(os.path.split(filename)[0], 'Figuras')
+    name = os.path.split(os.path.splitext(filename)[0])[-1]
+    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+    Nrepetitions = details['Nrepetitions']
     
     fig = plt.figure()
     plt.plot(t, V, linewidth=0.8)
-    plt.plot(meant, meanV, linewidth=1.5)
-    legends = ['Experimento {:.0f}'.format(i+1) for i in range(N)]
+    plt.plot(t, meanV, linewidth=1.5)
+    legends = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
     legends.append('Promedio')
     plt.legend(legends)
     plt.ylabel(r'Voltaje ($\mu$V)')
@@ -71,7 +64,7 @@ def plotPumpProbe(file, save=True):
 
 #%%
 
-def fullplotPumpProbe(file, save=True):
+def fullplotPumpProbe(filename, save=True):
     
     """Plots all PumpProbe experiments from a file on a set of subplots.
         
@@ -98,30 +91,24 @@ def fullplotPumpProbe(file, save=True):
     
     """
     
-    path = os.path.join(os.path.split(file)[0], 'Figuras')
-    name = os.path.split(os.path.splitext(file)[0])[-1]
-    data = ivs.loadPumpProbe(file)[0]
-    
-    N = len(data[0,:]) // 2 # Number of experiments
-    
-    t = np.array([data[:,2*i] for i in range(N)]).T
-    V = np.array([data[:,2*i+1] for i in range(N)]).T * 1e6
-    meanV = np.mean(V, axis=1)
-    meant = t[:,0] #np.mean(t, axis=1)
+    path = os.path.join(os.path.split(filename)[0], 'Figuras')
+    name = os.path.split(os.path.splitext(filename)[0])[-1]
+    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+    Nrepetitions = details['Nrepetitions']
     
     fig = plt.figure()
-    grid = plt.GridSpec(N, 2, wspace=0.4, hspace=0.3)
+    grid = plt.GridSpec(Nrepetitions, 2, wspace=0.4, hspace=0.3)
     
-    for i in range(N):
-        plt.subplot(N, 2, 2*i+1)
-        plt.plot(t[:,i], V[:,i], linewidth=0.8)
+    for i, v in enumerate(V.T):
+        plt.subplot(Nrepetitions, 2, 2*i+1)
+        plt.plot(t, V, linewidth=0.8)
     
     plt.subplot(grid[0,1])
-    plt.plot(meant, meanV, 'r', linewidth=0.8)
+    plt.plot(t, meanV, 'r', linewidth=0.8)
     
     plt.subplot(grid[1:,1])
     plt.plot(t, V, linewidth=0.8)
-    plt.plot(meant, meanV, linewidth=1.5)
+    plt.plot(t, meanV, linewidth=1.5)
 
     if not os.path.isdir(path):
         os.makedirs(path)
@@ -238,7 +225,7 @@ def linearPredictionPlot(filename, others, autosave=True):
     # For that, I'll need another callback function
     def check_save_callback(event):
         Tk().withdraw()
-    #        tk.newfilename = askopenfilename()
+    #   tk.newfilename = askopenfilename()
         newpath = os.path.join(path, 'Figuras')
         if not os.path.isdir(newpath):
             os.makedirs(newpath)
