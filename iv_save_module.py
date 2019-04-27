@@ -13,6 +13,7 @@ Pero el voltaje está en V
 """
 
 import numpy as np
+import os
 
 def loadPumpProbe(file):
     
@@ -110,3 +111,55 @@ def loadPumpProbe(file):
         raise ValueError("Columns have different number of rows :(")
         
     return data, details
+
+#%%
+    
+def freeFile(my_file, newformat='{}_{}'):
+    
+    """Returns a name for a new file to avoid overwriting.
+        
+    Takes a file name 'my_file'. It returns a related unnocupied 
+    file name 'free_file'. If necessary, it makes a new 
+    directory to agree with 'my_file' path.
+        
+    Parameters
+    ----------
+    my_file : str
+        Tentative file name (must contain full path and extension).
+    newformat='{}_{}' : str
+        Format string that indicates how to make new names.
+    
+    Returns
+    -------
+    new_fname : str
+        Unoccupied file name (also contains full path and extension).
+    
+    """
+    
+    base = os.path.split(my_file)[0]
+    extension = os.path.splitext(my_file)[-1]
+    
+    if not os.path.isdir(base):
+        os.makedirs(base)
+        free_file = my_file
+    
+    else:
+        sepformat = newformat.split('{}')[-2]
+        free_file = my_file
+        while os.path.isfile(free_file):
+            free_file = os.path.splitext(free_file)[0]
+            free_file = free_file.split(sepformat)
+            number = free_file[-1]
+            free_file = free_file[0]
+            try:
+                free_file = newformat.format(
+                        free_file,
+                        str(int(number)+1),
+                        )
+            except ValueError:
+                free_file = newformat.format(
+                        os.path.splitext(my_file)[0], 
+                        2)
+            free_file = os.path.join(base, free_file+extension)
+    
+    return free_file
