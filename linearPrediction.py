@@ -228,7 +228,7 @@ fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
                                                  angular_frequencies,
                                                  phases)]).T
 fit = sum(fit_terms.T)
-square_chi = sum( (fit - x)**2 ) / N # Best if absolute is smaller
+chi_squared = sum( (fit - x)**2 ) / N # Best if absolute is smaller
 
 ## Statistics of the residue
 #residue = x - fit
@@ -254,20 +254,40 @@ for i in range(Nfit_terms):
          2j * raman_frequencies * frequencies_damping[i]))
 raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 
+# What I would like this function to return
+results = np.array([frequencies,
+                    characteristic_times,
+                    quality_factors,
+                    amplitudes,
+                    pi_phases]).T
+
+others = dict(
+        fit = np.array([t, x, fit, *list(fit_terms.T)]).T,
+        raman = np.array([raman_frequencies,
+                          raman_spectrum,
+                          *list(raman_spectrum_terms.T)]).T,
+        chi_squared = chi_squared
+        )
+
 #%%
+
+# First I deglose data
+fit = others['fit']
+raman = others['raman']
+Nfit_terms = fit.shape[1] - 3
 
 # In order to save, if needed, I will need...
 name = os.path.split(os.path.splitext(filename)[0])[-1]
 path = os.path.split(filename)[0]
 
-# Make pretty graphs :D
+# Then, to plot, I first start a figure
 plt.figure()
 grid = plt.GridSpec(3, 5, hspace=0.1)
 
 # In the upper subplot, I put the Raman-like spectrum
 ax_spectrum = plt.subplot(grid[0,:4])
-plt.plot(raman_frequencies, raman_spectrum, linewidth=2)
-lspectrum_terms = plt.plot(raman_frequencies, raman_spectrum_terms, 
+plt.plot(raman[:,0], raman[:,1], linewidth=2)
+lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
                            linewidth=2)
 for l in lspectrum_terms: l.set_visible(False)
 plt.xlabel("Frecuencia (GHz)")
@@ -277,10 +297,10 @@ ax_spectrum.xaxis.set_label_position('top')
 
 # In the lower subplot, I put the data and fit
 ax_data = plt.subplot(grid[1:,:])
-ldata, = plt.plot(t, x, 'k', linewidth=0.5)
+ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.5)
 ax_data.autoscale(False)
-lfit, = plt.plot(t, fit, linewidth=2)
-lfit_terms = plt.plot(t, fit_terms, linewidth=2)
+lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
+lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
 for l in lfit_terms: l.set_visible(False)
 plt.xlabel("Tiempo (ps)")
 plt.ylabel(r"Voltaje ($\mu$V)")
@@ -296,7 +316,7 @@ check_legend.labels[1].set_color(lfit.get_color())
 for leg, l in zip(check_legend.labels[2:], lfit_terms):
     leg.set_color(l.get_color())
 
-# For that, I'll need a callback function
+# For that, I'll need a callback function  
 def check_legend_callback(label):
     if label == 'Data':
         ldata.set_visible(not ldata.get_visible())
