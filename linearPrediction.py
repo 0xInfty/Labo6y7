@@ -8,7 +8,7 @@ Created on Wed Apr 17 14:28:53 2019
 from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import CheckButtons
+import matplotlib.widgets as wid
 
 def roundMatlab(x, Matlab_round_needed=True):
     """Returns round value in Matlab 2014's style.
@@ -248,27 +248,43 @@ raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 #%%
 
 # Make pretty graphs :D
-fig = plt.figure()
-grid = plt.GridSpec(3, 2, wspace=0.4, hspace=0.3)
+plt.figure()
+grid = plt.GridSpec(3, 5, hspace=0.1)
 
-plt.subplot(grid[0,:])
-plt.plot(raman_frequencies, raman_spectrum)
+# In the upper subplot, I put the Raman-like spectrum
+ax_spectrum = plt.subplot(grid[0,:4])
+plt.plot(raman_frequencies, raman_spectrum, linewidth=2)
+lspectrum_terms = plt.plot(raman_frequencies, raman_spectrum_terms, 
+                           linewidth=2)
+for l in lspectrum_terms: l.set_visible(False)
+plt.xlabel("Frecuencia (GHz)")
+plt.ylabel("Amplitud (u.a.)")
+ax_spectrum.xaxis.tick_top()
+ax_spectrum.xaxis.set_label_position('top')
 
-plt.subplot(grid[1:,:])
-ldata, = plt.plot(t, x)
-lfit, = plt.plot(t, fit)
-lfit_terms = plt.plot(t, fit_terms)
+# In the lower subplot, I put the data and fit
+ax_data = plt.subplot(grid[1:,:])
+ldata, = plt.plot(t, x, 'k', linewidth=0.5)
+ax_data.autoscale(False)
+lfit, = plt.plot(t, fit, linewidth=2)
+lfit_terms = plt.plot(t, fit_terms, linewidth=2)
 for l in lfit_terms: l.set_visible(False)
+plt.xlabel("Tiempo (ps)")
+plt.ylabel(r"Voltaje ($\mu$V)")
 
-rax = plt.axes([0.05, 0.4, 0.1, 0.15])
-check = CheckButtons(rax, ('Data', 
-                           'Ajuste', 
-                           *['Término {:.0f}'.format(i+1) 
-                               for i in range(Nfit_terms)]), 
+# Because it's pretty, I make an interactive legend
+ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
+check_legend = wid.CheckButtons(ax_legend, ('Data', 
+                                 'Ajuste', 
+                                 *['Término {:.0f}'.format(i+1) 
+                                 for i in range(Nfit_terms)]), 
                     (True, True, *[False for i in range(Nfit_terms)]))
+check_legend.labels[1].set_color(lfit.get_color())
+for leg, l in zip(check_legend.labels[2:], lfit_terms):
+    leg.set_color(l.get_color())
 
-
-def func(label):
+# For that, I'll need a callback function
+def check_legend_callback(label):
     if label == 'Data':
         ldata.set_visible(not ldata.get_visible())
     elif label == 'Ajuste':
@@ -277,7 +293,10 @@ def func(label):
         for i in range(Nfit_terms):
             if label == 'Término {:.0f}'.format(i+1):
                 lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
+                lspectrum_terms[i].set_visible(
+                        not lspectrum_terms[i].get_visible())
     plt.draw()
-check.on_clicked(func)
+check_legend.on_clicked(check_legend_callback)
 
+# Once I have all that, I'll show the plot
 plt.show()
