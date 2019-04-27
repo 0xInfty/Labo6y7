@@ -5,10 +5,13 @@ Created on Wed Apr 17 14:28:53 2019
 @author: LEC
 """
 
+import iv_save_module as ivs
 from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as wid
+import os
+from tkinter import Tk, messagebox
 
 def roundMatlab(x, Matlab_round_needed=True):
     """Returns round value in Matlab 2014's style.
@@ -50,11 +53,17 @@ def roundMatlab(x, Matlab_round_needed=True):
 
 #%%
 
-# Get data
-t, x = np.loadtxt('Datos.txt')
+# Parameters
 dt = 2 # in ps
-T = max(t) - min(t)
+filename = os.path.join(os.getcwd(), 'Datos.txt')
+autosave = True
 Matlab_round_needed = True # Python 3.7.3 needs it
+
+#%%
+
+# Get data
+t, x = np.loadtxt(filename)
+T = max(t) - min(t)
 
 ## Kind of answer we want...
 #x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
@@ -247,6 +256,10 @@ raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 
 #%%
 
+# In order to save, if needed, I will need...
+name = os.path.split(os.path.splitext(filename)[0])[-1]
+path = os.path.split(filename)[0]
+
 # Make pretty graphs :D
 plt.figure()
 grid = plt.GridSpec(3, 5, hspace=0.1)
@@ -298,5 +311,35 @@ def check_legend_callback(label):
     plt.draw()
 check_legend.on_clicked(check_legend_callback)
 
+# Since I can, I would also like an interactive 'Save' button
+ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
+check_save = wid.Button(ax_save, 'Guardar')
+
+# For that, I'll need another callback function
+def check_save_callback(event):
+    Tk().withdraw()
+#        tk.newfilename = askopenfilename()
+    newpath = os.path.join(path, 'Figuras')
+    if not os.path.isdir(newpath):
+        os.makedirs(newpath)
+    newfilename = ivs.freeFile(os.path.join(newpath, name+'_fit.png'),
+                               newformat='{}__{}')
+    ax_save.set_visible(False)
+    plt.savefig(newfilename, bbox_inches='tight')
+    ax_save.set_visible(True)
+    messagebox.showinfo('¡Listo!',
+                        'Imagen guardada como {}.png'.format(
+                os.path.split(os.path.splitext(newfilename)[0])[-1]))
+check_save.on_clicked(check_save_callback)
+
 # Once I have all that, I'll show the plot
 plt.show()
+
+# Like it is shown for the first time, autosave if configured that way
+if autosave:
+    newpath = os.path.join(path, 'Figuras')
+    if not os.path.isdir(newpath):
+        os.makedirs(newpath)
+    ax_save.set_visible(False)
+    plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
+    ax_save.set_visible(True)
