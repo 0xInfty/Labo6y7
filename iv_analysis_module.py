@@ -5,13 +5,10 @@ Created on Wed Apr 17 14:28:53 2019
 @author: LEC
 """
 
-import iv_save_module as ivs
 from numpy import pi
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.widgets as wid
-import os
-from tkinter import Tk, messagebox
+
+#%%
 
 def roundMatlab(x, round_Matlab_needed=True):
     """Returns round value in Matlab 2014's style.
@@ -256,102 +253,3 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
             )
     
     return results, others
-
-#%%
-    
-def linearPredictionPlot(filename, others, autosave=True):
-
-    # First I deglose data
-    fit = others['fit']
-    raman = others['raman']
-    Nfit_terms = fit.shape[1] - 3
-    
-    # In order to save, if needed, I will need...
-    name = os.path.split(os.path.splitext(filename)[0])[-1]
-    path = os.path.split(filename)[0]
-    
-    # Then, to plot, I first start a figure
-    plt.figure()
-    grid = plt.GridSpec(3, 5, hspace=0.1)
-    
-    # In the upper subplot, I put the Raman-like spectrum
-    ax_spectrum = plt.subplot(grid[0,:4])
-    plt.plot(raman[:,0], raman[:,1], linewidth=2)
-    lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
-                               linewidth=2)
-    for l in lspectrum_terms: l.set_visible(False)
-    plt.xlabel("Frecuencia (GHz)")
-    plt.ylabel("Amplitud (u.a.)")
-    ax_spectrum.xaxis.tick_top()
-    ax_spectrum.xaxis.set_label_position('top')
-    
-    # In the lower subplot, I put the data and fit
-    ax_data = plt.subplot(grid[1:,:])
-    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.5)
-    ax_data.autoscale(False)
-    lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
-    lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
-    for l in lfit_terms: l.set_visible(False)
-    plt.xlabel("Tiempo (ps)")
-    plt.ylabel(r"Voltaje ($\mu$V)")
-    
-    # Because it's pretty, I make an interactive legend
-    ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
-    check_legend = wid.CheckButtons(ax_legend, ('Data', 
-                                     'Ajuste', 
-                                     *['Término {:.0f}'.format(i+1) 
-                                     for i in range(Nfit_terms)]), 
-                        (True, True, *[False for i in range(Nfit_terms)]))
-    check_legend.labels[1].set_color(lfit.get_color())
-    for leg, l in zip(check_legend.labels[2:], lfit_terms):
-        leg.set_color(l.get_color())
-    
-    # For that, I'll need a callback function  
-    def check_legend_callback(label):
-        if label == 'Data':
-            ldata.set_visible(not ldata.get_visible())
-        elif label == 'Ajuste':
-            lfit.set_visible(not lfit.get_visible())
-        else:
-            for i in range(Nfit_terms):
-                if label == 'Término {:.0f}'.format(i+1):
-                    lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
-                    lspectrum_terms[i].set_visible(
-                            not lspectrum_terms[i].get_visible())
-        plt.draw()
-    check_legend.on_clicked(check_legend_callback)
-    
-    # Since I can, I would also like an interactive 'Save' button
-    ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
-    check_save = wid.Button(ax_save, 'Guardar')
-    
-    # For that, I'll need another callback function
-    def check_save_callback(event):
-        Tk().withdraw()
-    #        tk.newfilename = askopenfilename()
-        newpath = os.path.join(path, 'Figuras')
-        if not os.path.isdir(newpath):
-            os.makedirs(newpath)
-        newfilename = ivs.freeFile(os.path.join(newpath, name+'_fit.png'),
-                                   newformat='{}__{}')
-        ax_save.set_visible(False)
-        plt.savefig(newfilename, bbox_inches='tight')
-        ax_save.set_visible(True)
-        messagebox.showinfo('¡Listo!',
-                            'Imagen guardada como {}.png'.format(
-                    os.path.split(os.path.splitext(newfilename)[0])[-1]))
-    check_save.on_clicked(check_save_callback)
-    
-    # Once I have all that, I'll show the plot
-    plt.show()
-    
-    # Like it is shown for the first time, autosave if configured that way
-    if autosave:
-        newpath = os.path.join(path, 'Figuras')
-        if not os.path.isdir(newpath):
-            os.makedirs(newpath)
-        ax_save.set_visible(False)
-        plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
-        ax_save.set_visible(True)
-        
-    return
