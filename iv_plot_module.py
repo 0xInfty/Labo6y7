@@ -218,7 +218,7 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, save=True):
+def plotPumpProbe(filename, autosave=True):
 
     """Plots all PumpProbe experiments from a file and its mean.
         
@@ -262,14 +262,14 @@ def plotPumpProbe(filename, save=True):
     if not os.path.isdir(path):
         os.makedirs(path)
     
-    if save:
+    if autosave:
         plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
     
     return fig
 
 #%%
 
-def fullplotPumpProbe(filename, save=True):
+def plotFullPumpProbe(filename, autosave=True):
     
     """Plots all PumpProbe experiments from a file on a set of subplots.
         
@@ -299,36 +299,52 @@ def fullplotPumpProbe(filename, save=True):
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
     t, V, meanV, details = loadNicePumpProbe(filename)
-    Nrepetitions = details['Nrepetitions']
+    Nrepetitions = details['nrepetitions']
     
     fig = plt.figure()
-    grid = plt.GridSpec(Nrepetitions, 2, wspace=0.4, hspace=0.3)
+    grid = plt.GridSpec(Nrepetitions, 2, wspace=0.2, hspace=0.06)
     
     for i, v in enumerate(V.T):
-        plt.subplot(Nrepetitions, 2, 2*i+1)
-        plt.plot(t, V, linewidth=0.8)
+        ax = plt.subplot(grid[i, 0])
+        plt.plot(t, v, linewidth=0.8)
+        plt.ylabel("Voltaje ($\mu$V)")
+        for l in ax.xaxis.get_ticklabels(): l.set_visible(False)
+        plt.annotate("Experimento {:.0f}".format(i+1),
+                     (0.77, 0.9), xycoords='axes fraction')
+    for l in ax.xaxis.get_ticklabels(): l.set_visible(True)
+    plt.xlabel("Tiempo (ps)")
     
-    plt.subplot(grid[0,1])
+    ax = plt.subplot(grid[0,1])
     plt.plot(t, meanV, 'r', linewidth=0.8)
+    plt.ylabel("Voltaje ($\mu$V)")
+    for l in ax.xaxis.get_ticklabels(): l.set_visible(False)
+    plt.annotate("Promedio", (0.84, 0.9), xycoords='axes fraction')
     
     plt.subplot(grid[1:,1])
     plt.plot(t, V, linewidth=0.8)
     plt.plot(t, meanV, linewidth=1.5)
+    plt.ylabel("Voltaje ($\mu$V)")
+    plt.xlabel("Tiempo (ps)")
 
     if not os.path.isdir(path):
         os.makedirs(path)
+
+    mng = plt.get_current_fig_manager()
+    mng.window.showMaximized()
     
-    if save:
+    if autosave:
         plt.savefig(os.path.join(path,name+'_full.png'), bbox_inches='tight')
     
     return fig
 
 #%%
 
-def plotallPumpProbe(path, full=False, save=True):
+def plotAllPumpProbe(path, full=False, autosave=True, autoclose=False):
     
     """Plots all PumpProbe experiments on the files from a given path.
         
+    The data files must be '.txt' files that begin with 'M'.
+    
     Parameters
     ----------
     file : str
@@ -350,14 +366,18 @@ def plotallPumpProbe(path, full=False, save=True):
     
     files = []
     for file in os.listdir(path):
-        if file.endswith(".txt"):
+        if file.endswith(".txt") and file.startswith("M"):
             files.append(os.path.join(path,file))
     
+    fig = []
     for f in files:
         if full:
-            fullplotPumpProbe(f, save=save);
+            fig.append(plotFullPumpProbe(f, autosave=autosave))
         else:
-            plotPumpProbe(f, save=save);
+            fig.append(plotPumpProbe(f, autosave=autosave))
+    
+    if autoclose:
+        for f in fig: plt.close(f)
 
 #%%
     
