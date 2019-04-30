@@ -43,6 +43,42 @@ def interactiveValueSelector(ax, x_value=True, y_value=True):
 
 #%%
 
+def interactiveIntegerSelector(ax, min_value=0, max_value=5):
+    
+    position = ax.get_position()   
+    if ax.xaxis.label.get_text() == '':
+        ax.set_position([position.x0,
+                         position.y0 + position.height*0.16,
+                         position.width,
+                         position.height*0.84])
+    else:
+        ax.set_position([position.x0,
+                         position.y0 + position.height*0.18,
+                         position.width,
+                         position.height*0.82])
+    
+    ax_selector = plt.axes([0.18, 0.1, 0.65, 0.03])        
+    ax_selector.yaxis.set_visible(False)
+    ax_selector.set_xlim(min_value, max_value+1)
+    selector = wid.Cursor(ax_selector, color='r', linewidth=2)
+    selector.horizOn = False
+    plt.show()
+    plt.annotate("¿Cantidad?", (0.01, 1.3), xycoords='axes fraction');
+    plt.annotate(
+            "Elija un número desde {:.0f} hasta {:.0f}.".format(
+                    min_value, 
+                    max_value), 
+            (0.45, 1.3), xycoords='axes fraction');        
+    
+    integer = int(plt.ginput()[0][0])
+    ax_selector.autoscale(False)
+    plt.vlines(integer, ax_selector.get_ylim()[0], ax_selector.get_ylim()[1], 'r')
+    selector.visible = False
+    
+    return integer
+
+#%%
+
 def plotPumpProbe(filename, save=True):
 
     """Plots all PumpProbe experiments from a file and its mean.

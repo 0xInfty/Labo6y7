@@ -93,12 +93,17 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     
     # Choose number of significant values
     Nsignificant = 4
-    #plt.figure()
-    #plt.semilogy(eigenvalues, linestyle='none', marker='o', 
-    #             fillstyle='none', markersize=10)
-    #plt.xlabel("Número")
-    #plt.ylabel("Autovalores")
-    #Nsignificant = int(input('¿Número de valores singulares?\t'))
+    fig = plt.figure()
+    ax = plt.subplot()
+    plt.semilogy(eigenvalues, linestyle='none', marker='o', 
+                 fillstyle='none', markersize=10)
+    plt.title('¿Número de valores singulares?')
+    plt.ylabel("Autovalores")
+    Nsignificant = ivp.interactiveIntegerSelector(ax, 
+                                                  min_value=0, 
+                                                  max_value=8)
+    if autoclose:
+        plt.close(fig)
     
     # Crop data according to it
     F = np.zeros((N-M, N-M))
