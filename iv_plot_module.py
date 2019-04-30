@@ -2,7 +2,7 @@
 """
 Created on Mon Apr 15 15:08:08 2019
 
-@author: LEC
+@author: Vall
 """
 
 from iv_save_module import freeFile, loadNicePumpProbe
@@ -248,7 +248,7 @@ def plotPumpProbe(filename, save=True):
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
     t, V, meanV, details = loadNicePumpProbe(filename)
-    Nrepetitions = details['Nrepetitions']
+    Nrepetitions = details['nrepetitions']
     
     fig = plt.figure()
     plt.plot(t, V, linewidth=0.8)
@@ -435,7 +435,7 @@ def linearPredictionPlot(filename, others, autosave=True):
         if not os.path.isdir(newpath):
             os.makedirs(newpath)
         newfilename = freeFile(os.path.join(newpath, name+'_fit.png'),
-                               newformat='{}__{}')
+                               newformat='{}_v{}')
         ax_save.set_visible(False)
         plt.savefig(newfilename, bbox_inches='tight')
         ax_save.set_visible(True)

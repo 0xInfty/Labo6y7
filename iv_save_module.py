@@ -2,7 +2,7 @@
 """
 Created on Fri Apr 12 10:10:42 2019
 
-@author: quimica
+@author: Vall
 """
 
 """
@@ -249,7 +249,7 @@ def loadNicePumpProbe(filename):
         
 def loadZeroPumpProbe(filename, autoclose=True):
     
-    t, V, meanV, details = loadNicePumpProbe(filename)[0]
+    t, V, meanV, details = loadNicePumpProbe(filename)
     fig = ivp.plotPumpProbe(filename, save=False)
     ax = fig.axes[0]
     t0 = ivp.interactiveValueSelector(ax, y_value=False)
