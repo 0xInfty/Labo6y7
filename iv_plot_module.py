@@ -14,6 +14,50 @@ from tkinter import Tk, messagebox
 
 #%%
 
+def interactiveLegend(ax, labels=False, show_default=True, 
+                      dimension=[0.75, 0.642, 0.155, 0.24]):
+    
+    lines = ax.lines
+    if labels is False:
+        labels = [l.get_label() for l in lines]
+    
+    try:
+        N = len(labels)
+    except:
+        N = 1
+    if N == 1:
+        labels = list(labels)
+        
+    try:
+        M = len(show_default)
+    except:
+        M = 1
+    if M != N and M == 1:
+        show_default = [show_default for l in labels]
+    
+    ax_buttons = plt.axes(dimension)
+    buttons = wid.CheckButtons(ax_buttons, labels, show_default)
+    legends = buttons.labels
+    for l, leg in zip(lines, legends):
+        leg.set_color(l.get_color())
+    for l, sd in zip(lines, show_default):
+        l.set_visible(sd)
+    
+    # For that, I'll need a callback function  
+    def buttons_callback(label):
+        for l, leg in zip(lines, legends):
+            if label == leg.get_text():
+                l.set_visible(not l.get_visible())
+        plt.draw()
+        return
+    buttons.on_clicked(buttons_callback)
+    
+    plt.show()
+    
+    return buttons
+
+#%%
+
 def interactiveValueSelector(ax, x_value=True, y_value=True):
     
     ax.autoscale(False)
@@ -378,6 +422,60 @@ def plotAllPumpProbe(path, full=False, autosave=True, autoclose=False):
     
     if autoclose:
         for f in fig: plt.close(f)
+
+#%%
+
+def plotInteractivePumpProbe(filename, autosave=True):
+
+    """Plots all PumpProbe experiments from a file and its mean.
+        
+    Parameters
+    ----------
+    file : str
+        File's root (must include directory and termination).
+    save=True : bool
+        Says whether to save or not.
+    
+    Returns
+    -------
+    fig : matplotlib.pyplot.Figure instance
+        Figure containing the desired plot.
+    
+    Raises
+    ------
+    pngfile : .png file
+        PNG image file (only if 'save=True').
+    
+    See also
+    --------
+    loadPumpProbe
+    
+    """
+    
+    path = os.path.join(os.path.split(filename)[0], 'Figuras')
+    name = os.path.split(os.path.splitext(filename)[0])[-1]
+    t, V, meanV, details = loadNicePumpProbe(filename)
+    Nrepetitions = details['nrepetitions']
+    
+    fig = plt.figure()
+    plt.plot(t, meanV, linewidth=1.5, zorder=100)
+    plt.plot(t, V, linewidth=0.8, zorder=0)
+    legends = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
+    legends = ['Promedio', *legends]
+    plt.ylabel(r'Voltaje ($\mu$V)')
+    plt.xlabel(r'Tiempo (ps)')
+    
+    ax = plt.gcf().axes[0]
+    show_default = [leg=='Promedio' for leg in legends]
+    buttons = interactiveLegend(ax, legends, show_default)
+    
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    
+    if autosave:
+        plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
+    
+    return fig, buttons
 
 #%%
     

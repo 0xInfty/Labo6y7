@@ -6,6 +6,7 @@ Created on Wed Apr 17 14:28:53 2019
 """
 
 import iv_plot_module as ivp
+import iv_save_module as ivs
 import matplotlib.pyplot as plt
 from numpy import pi
 import numpy as np
@@ -49,6 +50,57 @@ def roundMatlab(x, round_Matlab_needed=True):
         return y
     else:
         return round(x)
+
+#%%
+        
+def loadZeroPumpProbe(filename, autoclose=True):
+    
+    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+    fig = ivp.plotPumpProbe(filename, save=False)
+    ax = fig.axes[0]
+    t0 = ivp.interactiveValueSelector(ax, y_value=False)
+    t0 = t[np.argmin(abs(t-t0))]
+    
+    if autoclose:
+        plt.close(fig)
+
+    V = V[t>=t0, :]
+    meanV = meanV[t>=t0]
+    t = t[t>=t0]
+
+    return t, V, meanV, details
+
+#%%
+
+def cropData(t0, t, *args, **kwargs):
+    
+    try:
+        logic = kwargs['logic']
+    except:
+        logic = '>='
+    
+    if t0 not in t:
+        raise ValueError("Hey! t0 must be in t")
+    
+    index = eval("t{}t0".format(logic))
+    new_args = []
+    for a in args:
+        print(a)
+        try:
+            a = np.array(a)
+        except:
+            raise TypeError("Extra arguments must be array-like")
+        if a.ndim == 1:
+            new_args.append(a[index])
+        else:
+            try:
+                new_args.append(a[index, :])
+            except:
+                raise ValueError("This function takes only 1D or 2D arrays")
+    t = t[index]
+    new_args = [t, *new_args]
+    
+    return new_args
 
 #%% PMUSIC -----------------------------------------------------------------
 
