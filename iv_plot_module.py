@@ -6,6 +6,7 @@ Created on Mon Apr 15 15:08:08 2019
 """
 
 from iv_save_module import freeFile, loadNicePumpProbe
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as wid
 import os
@@ -60,7 +61,7 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
     ax_selector = plt.axes([0.18, 0.1, 0.65, 0.03])        
     ax_selector.yaxis.set_visible(False)
     ax_selector.set_xlim(min_value, max_value+1)
-    selector = wid.Cursor(ax_selector, color='r', linewidth=2)
+    selector = IntFillingCursor(ax_selector, color='r', linewidth=2)
     selector.horizOn = False
     plt.show()
     plt.annotate("¿Cantidad?", (0.01, 1.3), xycoords='axes fraction');
@@ -72,10 +73,148 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
     
     integer = int(plt.ginput()[0][0])
     ax_selector.autoscale(False)
-    plt.vlines(integer, ax_selector.get_ylim()[0], ax_selector.get_ylim()[1], 'r')
+    plt.fill([ax_selector.get_xlim()[0], integer,
+              integer, ax_selector.get_xlim()[0]],
+              [ax_selector.get_ylim()[0], ax_selector.get_ylim()[0],
+               ax_selector.get_ylim()[1], ax_selector.get_ylim()[1]],
+              'r')
     selector.visible = False
     
     return integer
+
+#%%
+
+class FillingCursor(wid.Cursor):
+    
+    def __init__(self, ax, horizOn=True, vertOn=True, **lineprops):
+        self.fill, = ax.fill([ax.get_xbound()[0], ax.get_xbound()[0],
+                             ax.get_xbound()[0], ax.get_xbound()[0]],
+                             [ax.get_xbound()[0], ax.get_xbound()[0],
+                             ax.get_xbound()[0], ax.get_xbound()[0]],
+                             **lineprops)
+#        self.fill.set_visible(False)
+        self.myax = ax
+        super().__init__(ax, horizOn=horizOn, vertOn=vertOn, 
+                         useblit=False, **lineprops)
+    
+    def clear(self, event):
+        """Internal event handler to clear the cursor."""
+        self.fill.set_visible(False)
+        super().clear(event)
+    
+    def onmove(self, event):
+        """Internal event handler to draw the cursor when the mouse moves."""
+        if self.ignore(event):
+            return
+        if not self.canvas.widgetlock.available(self):
+            return
+        if event.inaxes != self.ax:
+            self.linev.set_visible(False)
+            self.lineh.set_visible(False)
+            self.fill.set_visible(False)
+
+            if self.needclear:
+                self.canvas.draw()
+                self.needclear = False
+            return
+        self.needclear = True
+        if not self.visible:
+            return
+        self.linev.set_xdata((event.xdata, event.xdata))
+        self.lineh.set_ydata((event.ydata, event.ydata))
+        if self.vertOn and self.horizOn:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[0],
+                                        event.xdata,
+                                        event.xdata],
+                                        [self.myax.get_ybound()[0],
+                                         event.ydata,
+                                         event.ydata,
+                                         self.myax.get_xbound()[0]]]).T)
+        elif self.horizOn:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[1],
+                                        self.myax.get_xbound()[1]],
+                                        [self.myax.get_ybound()[0],
+                                         event.ydata,
+                                         event.ydata,
+                                         self.myax.get_ybound()[0]]]).T)
+        else:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        event.xdata,
+                                        event.xdata,
+                                        self.myax.get_xbound()[0]],
+                                       [self.myax.get_ybound()[0],
+                                        self.myax.get_ybound()[0],
+                                        self.myax.get_ybound()[1],
+                                        self.myax.get_ybound()[1]]]).T)           
+        self.linev.set_visible(self.visible and self.vertOn)
+        self.lineh.set_visible(self.visible and self.horizOn)
+        self.fill.set_visible(self.visible and (self.horizOn or self.vertOn))
+
+        self._update()
+
+#%%
+
+class IntFillingCursor(FillingCursor):
+    
+    def __init__(self, ax, horizOn=True, vertOn=True,
+                 **lineprops):
+        super().__init__(ax, horizOn=horizOn, vertOn=vertOn, **lineprops)
+        
+    def onmove(self, event):
+        """Internal event handler to draw the cursor when the mouse moves."""
+        if self.ignore(event):
+            return
+        if not self.canvas.widgetlock.available(self):
+            return
+        if event.inaxes != self.ax:
+            self.linev.set_visible(False)
+            self.lineh.set_visible(False)
+            self.fill.set_visible(False)
+
+            if self.needclear:
+                self.canvas.draw()
+                self.needclear = False
+            return
+        self.needclear = True
+        if not self.visible:
+            return
+        self.linev.set_xdata((int(event.xdata), int(event.xdata)))
+        self.lineh.set_ydata((int(event.ydata), int(event.ydata)))
+        if self.vertOn and self.horizOn:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[0],
+                                        int(event.xdata),
+                                        int(event.xdata)],
+                                        [self.myax.get_ybound()[0],
+                                         int(event.ydata),
+                                         int(event.ydata),
+                                         self.myax.get_xbound()[0]]]).T)
+        elif self.horizOn:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[0],
+                                        self.myax.get_xbound()[1],
+                                        self.myax.get_xbound()[1]],
+                                        [self.myax.get_ybound()[0],
+                                         int(event.ydata),
+                                         int(event.ydata),
+                                         self.myax.get_ybound()[0]]]).T)
+        else:
+            self.fill.set_xy(np.array([[self.myax.get_xbound()[0],
+                                        int(event.xdata),
+                                        int(event.xdata),
+                                        self.myax.get_xbound()[0]],
+                                       [self.myax.get_ybound()[0],
+                                        self.myax.get_ybound()[0],
+                                        self.myax.get_ybound()[1],
+                                        self.myax.get_ybound()[1]]]).T)           
+        self.linev.set_visible(self.visible and self.vertOn)
+        self.lineh.set_visible(self.visible and self.horizOn)
+        self.fill.set_visible(self.visible and (self.horizOn or self.vertOn))
+
+        self._update()
 
 #%%
 
