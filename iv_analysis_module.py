@@ -53,22 +53,22 @@ def roundMatlab(x, round_Matlab_needed=True):
 
 #%%
         
-def loadZeroPumpProbe(filename, autoclose=True):
-    
-    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
-    fig = ivp.plotPumpProbe(filename, save=False)
-    ax = fig.axes[0]
-    t0 = ivp.interactiveValueSelector(ax, y_value=False)
-    t0 = t[np.argmin(abs(t-t0))]
-    
-    if autoclose:
-        plt.close(fig)
-
-    V = V[t>=t0, :]
-    meanV = meanV[t>=t0]
-    t = t[t>=t0]
-
-    return t, V, meanV, details
+#def loadZeroPumpProbe(filename, autoclose=True):
+#    
+#    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+#    fig = ivp.plotPumpProbe(filename, autosave=False)
+#    ax = fig.axes[0]
+#    t0 = ivp.interactiveValueSelector(ax, y_value=False)
+#    t0 = t[np.argmin(abs(t-t0))]
+#    
+#    if autoclose:
+#        plt.close(fig)
+#
+#    V = V[t>=t0, :]
+#    meanV = meanV[t>=t0]
+#    t = t[t>=t0]
+#
+#    return t, V, meanV, details
 
 #%%
 
@@ -85,7 +85,6 @@ def cropData(t0, t, *args, **kwargs):
     index = eval("t{}t0".format(logic))
     new_args = []
     for a in args:
-        print(a)
         try:
             a = np.array(a)
         except:

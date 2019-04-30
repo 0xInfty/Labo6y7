@@ -7,6 +7,7 @@ Created on Wed Apr 17 14:28:53 2019
 
 import iv_analysis_module as iva
 import iv_plot_module as ivp
+import iv_save_module as ivs
 import os
 
 #%% ONE PLOT ----------------------------------------------------------------------
@@ -50,7 +51,10 @@ round_Matlab_needed = True # Pyhon 3.6.2 needs it
 
 # Load data
 filename = os.path.join(path, name)
-t, V, meanV, details = iva.loadZeroPumpProbe(filename)
+t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+t0 = ivp.interactiveTimeZero(filename, autoclose=autoclose)
+t, V, meanV = iva.cropData(t0, t, V, meanV)
+#t, V, meanV, details = iva.loadZeroPumpProbe(filename)
 dt = details['dt']
 
 # Use linear prediction

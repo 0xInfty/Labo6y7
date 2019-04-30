@@ -478,6 +478,21 @@ def plotInteractivePumpProbe(filename, autosave=True):
     return fig, buttons
 
 #%%
+ 
+def interactiveTimeZero(filename, autoclose=True):
+    
+    t, V, meanV, details = loadNicePumpProbe(filename)
+    fig = plotPumpProbe(filename, autosave=False)
+    ax = fig.axes[0]
+    t0 = interactiveValueSelector(ax, y_value=False)
+    t0 = t[np.argmin(abs(t-t0))]
+    
+    if autoclose:
+        plt.close(fig)
+
+    return t0
+
+#%%
     
 def linearPredictionPlot(filename, others, autosave=True):
 
