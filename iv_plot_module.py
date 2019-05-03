@@ -14,7 +14,7 @@ from tkinter import Tk, messagebox
 
 #%%
 
-def interactiveLegend(ax, labels=False, show_default=True, 
+def interactiveLegend(ax, labels=False, show_default=True,
                       dimension=[0.75, 0.642, 0.155, 0.24]):
     
     lines = ax.lines
@@ -34,6 +34,18 @@ def interactiveLegend(ax, labels=False, show_default=True,
         M = 1
     if M != N and M == 1:
         show_default = [show_default for l in labels]
+    
+    # Try out a normal legend
+    figure = plt.gcf()
+    legend = plt.legend(labels)
+#    position = legend.axes.get_position()
+    position = legend.get_window_extent().transformed(
+            figure.dpi_scale_trans.inverted())
+    legend.set_visible(False)
+    
+    # Define new position
+    position = [position.x0*0.8, position.y0,
+                position.width*1.2, position.height]
     
     ax_buttons = plt.axes(dimension)
     buttons = wid.CheckButtons(ax_buttons, labels, show_default)
@@ -262,7 +274,7 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, autosave=True):
+def plotPumpProbe(filename, autosave=True, grid=True):
 
     """Plots all PumpProbe experiments from a file and its mean.
         
@@ -294,14 +306,26 @@ def plotPumpProbe(filename, autosave=True):
     t, V, meanV, details = loadNicePumpProbe(filename)
     Nrepetitions = details['nrepetitions']
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=[6.4, 4.4])
     plt.plot(t, V, linewidth=0.8)
     plt.plot(t, meanV, linewidth=1.5)
     legends = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
     legends.append('Promedio')
-    plt.legend(legends)
-    plt.ylabel(r'Voltaje ($\mu$V)')
-    plt.xlabel(r'Tiempo (ps)')
+    plt.legend(legends, fontsize=12, framealpha=1)
+    plt.ylabel(r'Voltaje ($\mu$V)', fontsize=14)
+    plt.xlabel(r'Tiempo (ps)', fontsize=14)
+    
+    ax = fig.axes[0]
+    position = ax.get_position()
+    ax.set_position([position.x0*1.2, position.y0*1.3,
+                     position.width, position.height])
+    
+    if grid:
+        ax.tick_params(labelsize=12)
+        ax.minorticks_on()
+        ax.tick_params(axis='y', which='minor', left=False)
+        ax.tick_params(length=5)
+        ax.grid(axis='x', which='both')
     
     if not os.path.isdir(path):
         os.makedirs(path)
@@ -313,7 +337,7 @@ def plotPumpProbe(filename, autosave=True):
 
 #%%
 
-def plotFullPumpProbe(filename, autosave=True):
+def plotFullPumpProbe(filename, autosave=True, grid=True):
     
     """Plots all PumpProbe experiments from a file on a set of subplots.
         
@@ -364,11 +388,17 @@ def plotFullPumpProbe(filename, autosave=True):
     for l in ax.xaxis.get_ticklabels(): l.set_visible(False)
     plt.annotate("Promedio", (0.84, 0.9), xycoords='axes fraction')
     
-    plt.subplot(grid[1:,1])
+    ax = plt.subplot(grid[1:,1])
     plt.plot(t, V, linewidth=0.8)
     plt.plot(t, meanV, linewidth=1.5)
     plt.ylabel("Voltaje ($\mu$V)")
     plt.xlabel("Tiempo (ps)")
+    if grid:
+        ax.tick_params(labelsize=12)
+        ax.minorticks_on()
+        ax.tick_params(axis='y', which='minor', left=False)
+        ax.tick_params(length=5)
+        ax.grid(axis='x', which='both')
 
     if not os.path.isdir(path):
         os.makedirs(path)
