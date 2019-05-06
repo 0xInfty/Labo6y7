@@ -536,7 +536,7 @@ def linearPredictionPlot(filename, others, autosave=True):
     path = os.path.split(filename)[0]
     
     # Then, to plot, I first start a figure
-    plt.figure()
+    fig = plt.figure()
     grid = plt.GridSpec(3, 5, hspace=0.1)
     
     # In the upper subplot, I put the Raman-like spectrum
@@ -552,13 +552,18 @@ def linearPredictionPlot(filename, others, autosave=True):
     
     # In the lower subplot, I put the data and fit
     ax_data = plt.subplot(grid[1:,:])
-    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.5)
+    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.6)
     ax_data.autoscale(False)
     lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
     lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
     for l in lfit_terms: l.set_visible(False)
     plt.xlabel("Tiempo (ps)")
     plt.ylabel(r"Voltaje ($\mu$V)")
+    ax_data.tick_params(labelsize=12)
+    ax_data.minorticks_on()
+    ax_data.tick_params(axis='y', which='minor', left=False)
+    ax_data.tick_params(length=5)
+    ax_data.grid(axis='x', which='both')
     
     # Because it's pretty, I make an interactive legend
     ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
@@ -619,4 +624,4 @@ def linearPredictionPlot(filename, others, autosave=True):
         plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
         ax_save.set_visible(True)
         
-    return
+    return fig
