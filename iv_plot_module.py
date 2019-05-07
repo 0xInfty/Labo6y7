@@ -14,20 +14,20 @@ from tkinter import Tk, messagebox
 
 #%%
 
-def interactiveLegend(ax, labels=False, show_default=True,
-                      dimension=[0.75, 0.642, 0.155, 0.24]):
-    
+def interactiveLegend(ax, labels=False, show_default=True, location='best'):
+
+    # First, get the lines that are currently plotted
     lines = ax.lines
     if labels is False:
         labels = [l.get_label() for l in lines]
-    
+
+    # Now, if needed, correct labels and default show parameters
     try:
         N = len(labels)
     except:
         N = 1
     if N == 1:
         labels = list(labels)
-        
     try:
         M = len(show_default)
     except:
@@ -35,19 +35,38 @@ def interactiveLegend(ax, labels=False, show_default=True,
     if M != N and M == 1:
         show_default = [show_default for l in labels]
     
-    # Try out a normal legend
-    figure = plt.gcf()
-    legend = plt.legend(labels)
-#    position = legend.axes.get_position()
-    position = legend.get_window_extent().transformed(
-            figure.dpi_scale_trans.inverted())
-    legend.set_visible(False)
-    
-    # Define new position
-    position = [position.x0*0.8, position.y0,
-                position.width*1.2, position.height]
-    
-    ax_buttons = plt.axes(dimension)
+    # Choose legend location
+    number = len(labels)
+    height = .05 * number
+    extra = .05 * (number - 1)
+    if location=='best':
+        xmin = min([min(l.get_data()[0]) for l in lines])
+        xmax = max([max(l.get_data()[0]) for l in lines])
+        ymin = min([min(l.get_data()[1]) for l in lines])
+        ymax = max([max(l.get_data()[1]) for l in lines])
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        if abs(ymin-ylim[0]) > abs(ymax-ylim[1]):
+            location = 'lower '
+        else:
+            location = 'upper '
+        if abs(xmin-xlim[0]) > abs(xmax-xlim[1]):
+            location = location + 'right'
+        else:
+            location = location + 'left'
+    if location=='upper right':
+        position = [.65, .81 - extra, .23, height]
+    elif location=='upper left':
+        position = [.14, .81 - extra, .23, height]
+    elif location=='lower right':
+        position = [.14, .81 + extra, .23, height]
+    elif location=='lower left':
+        position = [.65, .81 + extra, .23, height]
+    else:
+        raise ValueError("Unvalid legend location")
+ 
+    # Create legend buttons
+    ax_buttons = plt.axes(position)
     buttons = wid.CheckButtons(ax_buttons, labels, show_default)
     legends = buttons.labels
     for l, leg in zip(lines, legends):
@@ -55,7 +74,7 @@ def interactiveLegend(ax, labels=False, show_default=True,
     for l, sd in zip(lines, show_default):
         l.set_visible(sd)
     
-    # For that, I'll need a callback function  
+    # Add callback function and run
     def buttons_callback(label):
         for l, leg in zip(lines, legends):
             if label == leg.get_text():
@@ -67,6 +86,34 @@ def interactiveLegend(ax, labels=False, show_default=True,
     plt.show()
     
     return buttons
+
+#%%
+
+def interactiveSaveButton(name, path, sufix='_fit'):
+    
+    # Since I can, I would also like an interactive 'Save' button
+    ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
+    check_save = wid.Button(ax_save, 'Guardar')
+    
+    # For that, I'll need another callback function
+    def check_save_callback(event):
+        Tk().withdraw()
+    #   tk.newfilename = askopenfilename()
+        newpath = os.path.join(path, 'Figuras')
+        if not os.path.isdir(newpath):
+            os.makedirs(newpath)
+        newfilename = freeFile(os.path.join(newpath, name+sufix+'.png'),
+                               newformat='{}_v{}')
+        ax_save.set_visible(False)
+        plt.savefig(newfilename, bbox_inches='tight')
+        ax_save.set_visible(True)
+        messagebox.showinfo('¡Listo!',
+                            'Imagen guardada como {}.png'.format(
+                    os.path.split(os.path.splitext(newfilename)[0])[-1]))
+    check_save.on_clicked(check_save_callback)
+    plt.show()
+    
+    return check_save
 
 #%%
 
@@ -488,16 +535,22 @@ def plotInteractivePumpProbe(filename, autosave=True):
     Nrepetitions = details['nrepetitions']
     
     fig = plt.figure()
+    ax = plt.subplot()
     plt.plot(t, meanV, linewidth=1.5, zorder=100)
     plt.plot(t, V, linewidth=0.8, zorder=0)
-    legends = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
-    legends = ['Promedio', *legends]
+    labels = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
+    labels = ['Promedio', *labels]
     plt.ylabel(r'Voltaje ($\mu$V)')
     plt.xlabel(r'Tiempo (ps)')
+    ax.tick_params(labelsize=12)
+    ax.minorticks_on()
+    ax.tick_params(axis='y', which='minor', left=False)
+    ax.tick_params(length=5)
+    ax.grid(axis='x', which='both')
     
-    ax = plt.gcf().axes[0]
-    show_default = [leg=='Promedio' for leg in legends]
-    buttons = interactiveLegend(ax, legends, show_default)
+    show_default = [True for lab in labels]
+    legend_buttons = interactiveLegend(ax, labels, show_default)
+    save_button = interactiveSaveButton(name, path)
     
     if not os.path.isdir(path):
         os.makedirs(path)
@@ -505,7 +558,7 @@ def plotInteractivePumpProbe(filename, autosave=True):
     if autosave:
         plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
     
-    return fig, buttons
+    return fig, legend_buttons, save_button
 
 #%%
  
