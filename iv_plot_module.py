@@ -321,7 +321,7 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, autosave=True, grid=True):
+def plotPumpProbe(filename, autosave=True, showgrid=True):
 
     """Plots all PumpProbe experiments from a file and its mean.
         
@@ -367,7 +367,7 @@ def plotPumpProbe(filename, autosave=True, grid=True):
     ax.set_position([position.x0*1.2, position.y0*1.3,
                      position.width, position.height])
     
-    if grid:
+    if showgrid:
         ax.tick_params(labelsize=12)
         ax.minorticks_on()
         ax.tick_params(axis='y', which='minor', left=False)
@@ -384,7 +384,7 @@ def plotPumpProbe(filename, autosave=True, grid=True):
 
 #%%
 
-def plotFullPumpProbe(filename, autosave=True, grid=True):
+def plotFullPumpProbe(filename, autosave=True, showgrid=True):
     
     """Plots all PumpProbe experiments from a file on a set of subplots.
         
@@ -440,7 +440,7 @@ def plotFullPumpProbe(filename, autosave=True, grid=True):
     plt.plot(t, meanV, linewidth=1.5)
     plt.ylabel("Voltaje ($\mu$V)")
     plt.xlabel("Tiempo (ps)")
-    if grid:
+    if showgrid:
         ax.tick_params(labelsize=12)
         ax.minorticks_on()
         ax.tick_params(axis='y', which='minor', left=False)
@@ -577,7 +577,7 @@ def interactiveTimeZero(filename, autoclose=True):
 
 #%%
     
-def linearPredictionPlot(filename, others, autosave=True):
+def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
 
     # First I deglose data
     fit = others['fit']
@@ -605,7 +605,7 @@ def linearPredictionPlot(filename, others, autosave=True):
     
     # In the lower subplot, I put the data and fit
     ax_data = plt.subplot(grid[1:,:])
-    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.6)
+    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.4)
     ax_data.autoscale(False)
     lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
     lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
@@ -613,10 +613,13 @@ def linearPredictionPlot(filename, others, autosave=True):
     plt.xlabel("Tiempo (ps)")
     plt.ylabel(r"Voltaje ($\mu$V)")
     ax_data.tick_params(labelsize=12)
-    ax_data.minorticks_on()
-    ax_data.tick_params(axis='y', which='minor', left=False)
-    ax_data.tick_params(length=5)
-    ax_data.grid(axis='x', which='both')
+    if showgrid:
+        ax_data.minorticks_on()
+        ax_data.tick_params(axis='y', which='minor', left=False)
+        ax_data.tick_params(length=5)
+        ax_data.grid(axis='x', which='both')
+        ldata.set_linewidth(0.6)
+        lfit.set_linewidth(2.3)
     
     # Because it's pretty, I make an interactive legend
     ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
@@ -645,25 +648,7 @@ def linearPredictionPlot(filename, others, autosave=True):
     check_legend.on_clicked(check_legend_callback)
     
     # Since I can, I would also like an interactive 'Save' button
-    ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
-    check_save = wid.Button(ax_save, 'Guardar')
-    
-    # For that, I'll need another callback function
-    def check_save_callback(event):
-        Tk().withdraw()
-    #   tk.newfilename = askopenfilename()
-        newpath = os.path.join(path, 'Figuras')
-        if not os.path.isdir(newpath):
-            os.makedirs(newpath)
-        newfilename = freeFile(os.path.join(newpath, name+'_fit.png'),
-                               newformat='{}_v{}')
-        ax_save.set_visible(False)
-        plt.savefig(newfilename, bbox_inches='tight')
-        ax_save.set_visible(True)
-        messagebox.showinfo('¡Listo!',
-                            'Imagen guardada como {}.png'.format(
-                    os.path.split(os.path.splitext(newfilename)[0])[-1]))
-    check_save.on_clicked(check_save_callback)
+    save_button = interactiveSaveButton(name, path, sufix='_fit')
     
     # Once I have all that, I'll show the plot
     plt.show()
@@ -673,8 +658,8 @@ def linearPredictionPlot(filename, others, autosave=True):
         newpath = os.path.join(path, 'Figuras')
         if not os.path.isdir(newpath):
             os.makedirs(newpath)
-        ax_save.set_visible(False)
+        save_button.ax.set_visible(False)
         plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
-        ax_save.set_visible(True)
+        save_button.ax.set_visible(True)
         
     return fig
