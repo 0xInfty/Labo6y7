@@ -186,6 +186,21 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
     return integer
 
 #%%
+ 
+def interactiveTimeZero(filename, autoclose=True):
+    
+    t, V, details = loadNicePumpProbe(filename)
+    fig = plotPumpProbe(filename, autosave=False)
+    ax = fig.axes[0]
+    t0 = interactiveValueSelector(ax, y_value=False)
+    t0 = t[np.argmin(abs(t-t0))]
+    
+    if autoclose:
+        plt.close(fig)
+
+    return t0
+
+#%%
 
 class FillingCursor(wid.Cursor):
     
@@ -350,7 +365,8 @@ def plotPumpProbe(filename, autosave=True, showgrid=True):
     
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, meanV, details = loadNicePumpProbe(filename)
+    t, V, details = loadNicePumpProbe(filename)
+    meanV = np.mean(V, axis=1)
     Nrepetitions = details['nrepetitions']
     
     fig = plt.figure(figsize=[6.4, 4.4])
@@ -413,7 +429,8 @@ def plotFullPumpProbe(filename, autosave=True, showgrid=True):
     
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, meanV, details = loadNicePumpProbe(filename)
+    t, V, details = loadNicePumpProbe(filename)
+    meanV = np.mean(V, axis=1)
     Nrepetitions = details['nrepetitions']
     
     fig = plt.figure()
@@ -531,7 +548,8 @@ def plotInteractivePumpProbe(filename, autosave=True):
     
     path = os.path.join(os.path.split(filename)[0], 'Figuras')
     name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, meanV, details = loadNicePumpProbe(filename)
+    t, V, details = loadNicePumpProbe(filename)
+    meanV = np.mean(V, axis=1)
     Nrepetitions = details['nrepetitions']
     
     fig = plt.figure()
@@ -561,21 +579,6 @@ def plotInteractivePumpProbe(filename, autosave=True):
     return fig, legend_buttons, save_button
 
 #%%
- 
-def interactiveTimeZero(filename, autoclose=True):
-    
-    t, V, meanV, details = loadNicePumpProbe(filename)
-    fig = plotPumpProbe(filename, autosave=False)
-    ax = fig.axes[0]
-    t0 = interactiveValueSelector(ax, y_value=False)
-    t0 = t[np.argmin(abs(t-t0))]
-    
-    if autoclose:
-        plt.close(fig)
-
-    return t0
-
-#%%
     
 def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
 
@@ -594,10 +597,11 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
     
     # In the upper subplot, I put the Raman-like spectrum
     ax_spectrum = plt.subplot(grid[0,:4])
-    plt.plot(raman[:,0], raman[:,1], linewidth=2)
-    lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
-                               linewidth=2)
-    for l in lspectrum_terms: l.set_visible(False)
+    if raman is not False:    
+        plt.plot(raman[:,0], raman[:,1], linewidth=2)
+        lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
+                                   linewidth=2)
+        for l in lspectrum_terms: l.set_visible(False)
     plt.xlabel("Frecuencia (GHz)")
     plt.ylabel("Amplitud (u.a.)")
     ax_spectrum.xaxis.tick_top()
@@ -642,8 +646,9 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
             for i in range(Nfit_terms):
                 if label == 'Término {:.0f}'.format(i+1):
                     lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
-                    lspectrum_terms[i].set_visible(
-                            not lspectrum_terms[i].get_visible())
+                    if raman is not False:
+                        lspectrum_terms[i].set_visible(
+                                not lspectrum_terms[i].get_visible())
         plt.draw()
     check_legend.on_clicked(check_legend_callback)
     
