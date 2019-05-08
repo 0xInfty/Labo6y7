@@ -15,34 +15,31 @@ import os
 
 # Parameters
 name = 'M_20190506_11'
-folder = '2019-05-06'
-path = r'F:\Pump-Probe\Iván y Valeria\Mediciones'
+path = r'F:\Pump-Probe\Iván y Valeria\Mediciones\2019-05-06'
 
 # Create full filename
-filename = os.path.join(path, folder, name+'.txt')
+filename = os.path.join(path, name+'.txt')
 
 #%% ONE PLOT ----------------------------------------------------------------------
 
 # Parameters
-full = False
+interactive = False
 autosave = True
 
 # Plot
-if full:
-    ivp.plotFullPumpProbe(filename, autosave=autosave)
+if interactive:
+    ivp.plotInteractivePumpProbe(filename, autosave=autosave)
 else:
     ivp.plotPumpProbe(filename, autosave=autosave)
 
 #%% SEVERAL PLOTS -----------------------------------------------------------------
 
 # Parameters
-full = True
 autosave = True
-autoclose = False
+autoclose = True
 
 # Plot
-ivp.plotAllPumpProbe(path, full=full, 
-                     autosave=autosave, autoclose=autoclose)
+ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
 
 #%% LINEAR PREDICTION -------------------------------------------------------------
 
