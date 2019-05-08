@@ -9,22 +9,30 @@ import iv_analysis_module as iva
 import iv_plot_module as ivp
 import iv_save_module as ivs
 import os
-#import numpy as np
+import numpy as np
 
-#%% CHOOSE FILE -------------------------------------------------------------------
+#%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190506_11'
-path = r'F:\Pump-Probe\Iván y Valeria\Mediciones\2019-05-06'
+name = 'M_20190508_13'
+path = r'F:\Pump-Probe\Iván y Valeria\Mediciones\2019-05-08'
+
+# Plot parameters
+interactive = True
+autoclose = True
+autosave = True
+
+# Fit parameters
+round_Matlab_needed = True # Pyhon 3.6.2 needs it
+use_mean = False
+use_experiment = 1
+send_tail_to_zero = True
+use_fraction = .2
 
 # Create full filename
 filename = os.path.join(path, name+'.txt')
 
-#%% ONE PLOT ----------------------------------------------------------------------
-
-# Parameters
-interactive = False
-autosave = True
+#%% PLOT -------------------------------------------------------------------------
 
 # Plot
 if interactive:
@@ -32,31 +40,25 @@ if interactive:
 else:
     ivp.plotPumpProbe(filename, autosave=autosave)
 
-#%% SEVERAL PLOTS -----------------------------------------------------------------
-
-# Parameters
-autosave = True
-autoclose = True
-
-# Plot
-ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
+# Several plots
+#ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
 
 #%% LINEAR PREDICTION -------------------------------------------------------------
 
-# Parameters
-autoclose = True
-autosave = True
-round_Matlab_needed = True # Pyhon 3.6.2 needs it
-
 # Load data
-t, V, meanV, details = ivs.loadNicePumpProbe(filename)
+t, V, details = ivs.loadNicePumpProbe(filename)
 t0 = ivp.interactiveTimeZero(filename, autoclose=autoclose)
-t, V, meanV = iva.cropData(t0, t, V, meanV)
-#t, V, meanV, details = iva.loadZeroPumpProbe(filename)
+t, V = iva.cropData(t0, t, V)
 dt = details['dt']
 
 # Use linear prediction
-data = meanV
+if use_mean:
+    meanV = np.mean(V, axis=1)
+    data = meanV
+else:
+    data = V[:, use_experiment-1]
+V0 = min(data[int( (1-use_fraction) * len(data)):])
+data = data - V0
 results, others = iva.linearPrediction(t, data, dt, 
                                       autoclose=autoclose,
                                       round_Matlab_needed=round_Matlab_needed)
