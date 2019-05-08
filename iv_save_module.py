@@ -186,9 +186,6 @@ def loadNicePumpProbe(filename):
         Equispaced time in ps. It has 'nsize' length.
     V : np.array
         Measured voltage in uV. It has 'nsize' rows and 'nrepetitions' columns.
-    meanV : np.array
-        Mean voltage in uV, taking into account the 'nrepetitions' experiments. 
-        It has 'nsize' length.
     details : dict
         Details of the measurement, including...
             samplerate : float
@@ -232,13 +229,10 @@ def loadNicePumpProbe(filename):
     # Add uV voltage
     V = np.array([1e6 * data[:, 2*i+1] for i in range(nrepetitions)]).T
     
-    # Add mean 
-    meanV = np.mean(V, axis=1)
-    
     # Add some other relevant details
     details.update(dict(samplerate=samplerate,
                         dt=dt,
                         nsize=nsize,
                         nrepetitions=nrepetitions))
     
-    return t, V, meanV, details
+    return t, V, details
