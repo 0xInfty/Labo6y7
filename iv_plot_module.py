@@ -51,9 +51,9 @@ def interactiveLegend(ax, labels=False, show_default=True, location='best'):
         else:
             location = 'upper '
         if abs(xmin-xlim[0]) > abs(xmax-xlim[1]):
-            location = location + 'right'
-        else:
             location = location + 'left'
+        else:
+            location = location + 'right'
     if location=='upper right':
         position = [.65, .81 - extra, .23, height]
     elif location=='upper left':
