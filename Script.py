@@ -18,14 +18,15 @@ name = 'M_20190508_13'
 path = r'F:\Pump-Probe\Iván y Valeria\Mediciones\2019-05-08'
 
 # Plot parameters
+plot = False
 interactive = True
 autoclose = True
 autosave = True
 
 # Fit parameters
 round_Matlab_needed = True # Pyhon 3.6.2 needs it
-use_mean = False
-use_experiment = 1
+use_full_mean = True
+use_experiments = [0] # First is 0, not 1!
 send_tail_to_zero = True
 use_fraction = .2
 
@@ -35,10 +36,8 @@ filename = os.path.join(path, name+'.txt')
 #%% PLOT -------------------------------------------------------------------------
 
 # Plot
-if interactive:
-    ivp.plotInteractivePumpProbe(filename, autosave=autosave)
-else:
-    ivp.plotPumpProbe(filename, autosave=autosave)
+if plot:
+    ivp.plotPumpProbe(filename, interactive=interactive, autosave=autosave)
 
 # Several plots
 #ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
@@ -52,11 +51,10 @@ t, V = iva.cropData(t0, t, V)
 dt = details['dt']
 
 # Use linear prediction
-if use_mean:
-    meanV = np.mean(V, axis=1)
-    data = meanV
+if use_full_mean:
+    data = np.mean(V, axis=1)
 else:
-    data = V[:, use_experiment-1]
+    data = np.mean(V[:, use_experiments], axis=1)
 V0 = min(data[int( (1-use_fraction) * len(data)):])
 data = data - V0
 results, others = iva.linearPrediction(t, data, dt, 
