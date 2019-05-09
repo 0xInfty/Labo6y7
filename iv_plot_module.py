@@ -16,6 +16,29 @@ from tkinter import Tk, messagebox
 
 def interactiveLegend(ax, labels=False, show_default=True, location='best'):
 
+    """Adds an interactive save button to a given figure.
+    
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axes to which the interactive legend should be added.
+    labels=False : bool, list
+        If not false, the list of string names for the different lines that 
+        are plotted.
+    show_default=True : bool, list
+        If not bool, the list of boolean values that say whether to show at 
+        first or not the different lines that are plotted.
+    location='best' : str
+        A string that indicates where to add the legend on the plot area. 
+        Can be 'best', 'upper right', 'upper left', 'lower right', 
+        'lower left'.
+    
+    Returns
+    -------
+    buttons : wid.Button
+        Interactive legend instance.
+    """
+    
     # First, get the lines that are currently plotted
     lines = ax.lines
     if labels is False:
@@ -89,11 +112,33 @@ def interactiveLegend(ax, labels=False, show_default=True, location='best'):
 
 #%%
 
-def interactiveSaveButton(name, path, sufix='_fit'):
+def interactiveSaveButton(filename, sufix='', new_format='{}_v{}'):
+
+    """Adds an interactive save button to a given figure.
+    
+    Parameters
+    ----------
+    filename : str
+        A model filename, which must include full path.
+    sufix='' : str
+        A sufix to be always added to the given filename.
+    new_format='{}_v{}' : str
+        A formatter that allows to make new filenames in order to avoid 
+        overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
+        'F:\Hola_v2.png'.
+    
+    Returns
+    -------
+    save_button : wid.Button
+        Interactive save button instance.
+    """
+    
+    path, name = os.path.split(filename)
+    name = os.path.splitext(name)[0]
     
     # Since I can, I would also like an interactive 'Save' button
     ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
-    check_save = wid.Button(ax_save, 'Guardar')
+    save_button = wid.Button(ax_save, 'Guardar')
     
     # For that, I'll need another callback function
     def check_save_callback(event):
@@ -103,21 +148,46 @@ def interactiveSaveButton(name, path, sufix='_fit'):
         if not os.path.isdir(newpath):
             os.makedirs(newpath)
         newfilename = freeFile(os.path.join(newpath, name+sufix+'.png'),
-                               newformat='{}_v{}')
+                               newformat=new_format)
         ax_save.set_visible(False)
         plt.savefig(newfilename, bbox_inches='tight')
         ax_save.set_visible(True)
         messagebox.showinfo('¡Listo!',
                             'Imagen guardada como {}.png'.format(
                     os.path.split(os.path.splitext(newfilename)[0])[-1]))
-    check_save.on_clicked(check_save_callback)
+    save_button.on_clicked(check_save_callback)
     plt.show()
     
-    return check_save
+    return save_button
 
 #%%
 
 def interactiveValueSelector(ax, x_value=True, y_value=True):
+    
+    """Allows to choose values from the axes of a plot.
+    
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axes instance of the plot from where you want to choose.
+    x_value=True : bool
+        Whether to return the x value.
+    y_value=True : bool
+        Whether to return the y value.
+    
+    Returns
+    -------
+    value : float
+        If only one value is required. This is the x value if 'x_value=True' 
+        and 'y_value=False'. Otherwise, it is the y value.
+    values : tuple
+        If both values are required. Then it returns (x value, y value).
+    
+    See also
+    --------
+    plt.Axes
+    wid.Cursor
+    """
     
     ax.autoscale(False)
     cursor = wid.Cursor(ax, useblit=True, 
@@ -148,6 +218,30 @@ def interactiveValueSelector(ax, x_value=True, y_value=True):
 #%%
 
 def interactiveIntegerSelector(ax, min_value=0, max_value=5):
+    
+    """Adds an integer selector bar to a single-plot figure.
+    
+    Allows to choose an integer value looking at a plot.
+    
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axis instance from the single-plot figure.
+    min_value=0 : int
+        Minimum integer value that can be chosen.
+    max_value=5 : int
+        Maximum integer value that can be chosen.
+    
+    Returns
+    -------
+    integer : int
+        Selected integer value.
+    
+    See also
+    --------
+    ivp.IntFillingCursor
+    plt.Axes
+    """
     
     position = ax.get_position()   
     if ax.xaxis.label.get_text() == '':
@@ -189,6 +283,25 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
  
 def interactiveTimeZero(filename, autoclose=True):
     
+    """Allows to select a zero time on a Pump Probe file.
+    
+    Parameters
+    ----------
+    filename : str
+        Filename, which must include full path and extension.
+    autoclose=True : bool
+        Says whether to automatically close this picture or not.
+    
+    Returns
+    -------
+    t0 : float
+        Selected value.
+    
+    See also
+    --------
+    ivs.loadNicePumpProbe
+    """
+    
     t, V, details = loadNicePumpProbe(filename)
     fig = plotPumpProbe(filename, autosave=False)
     ax = fig.axes[0]
@@ -203,6 +316,8 @@ def interactiveTimeZero(filename, autoclose=True):
 #%%
 
 class FillingCursor(wid.Cursor):
+    
+    """Subclass that fills one side of the cursor"""
     
     def __init__(self, ax, horizOn=True, vertOn=True, **lineprops):
         self.fill, = ax.fill([ax.get_xbound()[0], ax.get_xbound()[0],
@@ -277,6 +392,8 @@ class FillingCursor(wid.Cursor):
 
 class IntFillingCursor(FillingCursor):
     
+    """Subclass that only allows integer values on the filling cursor"""
+    
     def __init__(self, ax, horizOn=True, vertOn=True,
                  **lineprops):
         super().__init__(ax, horizOn=horizOn, vertOn=vertOn, **lineprops)
@@ -336,213 +453,43 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, autosave=True, showgrid=True):
+def plotPumpProbe(filename, interactive=False, autosave=True):
 
     """Plots all PumpProbe experiments from a file and its mean.
+    
+    Can also make an interactive plot, which holds a save button and allows to 
+    choose only certain experiments to be shown from the legend.
+    
+    By default, it also saves a picture on the file's path.
         
     Parameters
     ----------
     file : str
         File's root (must include directory and termination).
-    save=True : bool
-        Says whether to save or not.
+    interactive=True : bool
+        Says whether to make an interactive plot or not.
+    autosave=True : bool
+        Says whether to automatically save or not.
     
     Returns
     -------
-    fig : matplotlib.pyplot.Figure instance
+    fig : plt.Figure instance
         Figure containing the desired plot.
+    legend_buttons : wid.CheckButtons
+        Interactive legend. Only returned if making an interactive plot.
+    save_button : wid.Button
+        Interactive save button. Only returned if making an interactive plot.        
     
     Raises
     ------
     pngfile : .png file
-        PNG image file (only if 'save=True').
+        PNG image file (only if 'autosave=True').
     
     See also
     --------
-    loadPumpProbe
-    
-    """
-    
-    path = os.path.join(os.path.split(filename)[0], 'Figuras')
-    name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, details = loadNicePumpProbe(filename)
-    meanV = np.mean(V, axis=1)
-    Nrepetitions = details['nrepetitions']
-    
-    fig = plt.figure(figsize=[6.4, 4.4])
-    plt.plot(t, V, linewidth=0.8)
-    plt.plot(t, meanV, linewidth=1.5)
-    legends = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
-    legends.append('Promedio')
-    plt.legend(legends, fontsize=12, framealpha=1)
-    plt.ylabel(r'Voltaje ($\mu$V)', fontsize=14)
-    plt.xlabel(r'Tiempo (ps)', fontsize=14)
-    
-    ax = fig.axes[0]
-    position = ax.get_position()
-    ax.set_position([position.x0*1.2, position.y0*1.3,
-                     position.width, position.height])
-    
-    if showgrid:
-        ax.tick_params(labelsize=12)
-        ax.minorticks_on()
-        ax.tick_params(axis='y', which='minor', left=False)
-        ax.tick_params(length=5)
-        ax.grid(axis='x', which='both')
-    
-    if not os.path.isdir(path):
-        os.makedirs(path)
-    
-    if autosave:
-        plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
-    
-    return fig
-
-#%%
-
-def plotFullPumpProbe(filename, autosave=True, showgrid=True):
-    
-    """Plots all PumpProbe experiments from a file on a set of subplots.
-        
-    Parameters
-    ----------
-    file : str
-        File's root (must include directory and termination).
-    save=True : bool
-        Says whether to save or not.
-    
-    Returns
-    -------
-    fig : matplotlib.pyplot.Figure instance
-        Figure containing the desired plot.
-    
-    Raises
-    ------
-    pngfile : .png file
-        PNG image file (only if 'save=True').
-    
-    See also
-    --------
-    loadPumpProbe
-    
-    """
-    
-    path = os.path.join(os.path.split(filename)[0], 'Figuras')
-    name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, details = loadNicePumpProbe(filename)
-    meanV = np.mean(V, axis=1)
-    Nrepetitions = details['nrepetitions']
-    
-    fig = plt.figure()
-    grid = plt.GridSpec(Nrepetitions, 2, wspace=0.2, hspace=0.06)
-    
-    for i, v in enumerate(V.T):
-        ax = plt.subplot(grid[i, 0])
-        plt.plot(t, v, linewidth=0.8)
-        plt.ylabel("Voltaje ($\mu$V)")
-        for l in ax.xaxis.get_ticklabels(): l.set_visible(False)
-        plt.annotate("Experimento {:.0f}".format(i+1),
-                     (0.77, 0.9), xycoords='axes fraction')
-    for l in ax.xaxis.get_ticklabels(): l.set_visible(True)
-    plt.xlabel("Tiempo (ps)")
-    
-    ax = plt.subplot(grid[0,1])
-    plt.plot(t, meanV, 'r', linewidth=0.8)
-    plt.ylabel("Voltaje ($\mu$V)")
-    for l in ax.xaxis.get_ticklabels(): l.set_visible(False)
-    plt.annotate("Promedio", (0.84, 0.9), xycoords='axes fraction')
-    
-    ax = plt.subplot(grid[1:,1])
-    plt.plot(t, V, linewidth=0.8)
-    plt.plot(t, meanV, linewidth=1.5)
-    plt.ylabel("Voltaje ($\mu$V)")
-    plt.xlabel("Tiempo (ps)")
-    if showgrid:
-        ax.tick_params(labelsize=12)
-        ax.minorticks_on()
-        ax.tick_params(axis='y', which='minor', left=False)
-        ax.tick_params(length=5)
-        ax.grid(axis='x', which='both')
-
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-    mng = plt.get_current_fig_manager()
-    mng.window.showMaximized()
-    
-    if autosave:
-        plt.savefig(os.path.join(path,name+'_full.png'), bbox_inches='tight')
-    
-    return fig
-
-#%%
-
-def plotAllPumpProbe(path, full=False, autosave=True, autoclose=False):
-    
-    """Plots all PumpProbe experiments on the files from a given path.
-        
-    The data files must be '.txt' files that begin with 'M'.
-    
-    Parameters
-    ----------
-    file : str
-        File's root (must include directory and termination).
-    save=True : bool
-        Says whether to save or not.
-    
-    Returns
-    -------
-    matplotlib.pyplot figure
-    png image files
-    
-    See also
-    --------
-    plotPumpProbe
-    fullplotPumpProbe
-    
-    """
-    
-    files = []
-    for file in os.listdir(path):
-        if file.endswith(".txt") and file.startswith("M"):
-            files.append(os.path.join(path,file))
-    
-    fig = []
-    for f in files:
-        if full:
-            fig.append(plotFullPumpProbe(f, autosave=autosave))
-        else:
-            fig.append(plotPumpProbe(f, autosave=autosave))
-    
-    if autoclose:
-        for f in fig: plt.close(f)
-
-#%%
-
-def plotInteractivePumpProbe(filename, autosave=True):
-
-    """Plots all PumpProbe experiments from a file and its mean.
-        
-    Parameters
-    ----------
-    file : str
-        File's root (must include directory and termination).
-    save=True : bool
-        Says whether to save or not.
-    
-    Returns
-    -------
-    fig : matplotlib.pyplot.Figure instance
-        Figure containing the desired plot.
-    
-    Raises
-    ------
-    pngfile : .png file
-        PNG image file (only if 'save=True').
-    
-    See also
-    --------
-    loadPumpProbe
+    ivs.loadPumpProbe
+    ivp.interactiveLegend
+    ivp.interactiveSaveButton
     
     """
     
@@ -566,17 +513,72 @@ def plotInteractivePumpProbe(filename, autosave=True):
     ax.tick_params(length=5)
     ax.grid(axis='x', which='both')
     
-    show_default = [True for lab in labels]
-    legend_buttons = interactiveLegend(ax, labels, show_default)
-    save_button = interactiveSaveButton(name, path)
+    if interactive:
+        show_default = [True for lab in labels]
+        legend_buttons = interactiveLegend(ax, labels, show_default)
+        save_button = interactiveSaveButton(filename)
+    else:
+        plt.legend(labels)
     
     if not os.path.isdir(path):
         os.makedirs(path)
     
     if autosave:
+        if interactive:
+            save_button.ax.set_visible(False)
         plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
+        if interactive:
+            save_button.ax.set_visible(True)
     
-    return fig, legend_buttons, save_button
+    if interactive:
+        return fig, legend_buttons, save_button
+    else:
+        return fig
+
+#%%
+
+def plotAllPumpProbe(path, autosave=True, autoclose=False):
+    
+    """Plots all PumpProbe experiments on the files from a given path.
+        
+    The data files must be '.txt' files that begin with 'M'.
+    
+    Parameters
+    ----------
+    file : str
+        File's root (must include directory and termination).
+    save=True : bool
+        Says whether to save or not.
+    
+    Returns
+    -------
+    figures : list
+        A list containing plt.Figure instances.     
+    
+    Raises
+    ------
+    pngfiles : .png files
+        PNG image files (only if 'autosave=True').
+    
+    See also
+    --------
+    ivp.plotPumpProbe
+    
+    """
+    
+    files = []
+    for file in os.listdir(path):
+        if file.endswith(".txt") and file.startswith("M"):
+            files.append(os.path.join(path,file))
+    
+    figures = []
+    for f in files:
+        figures.append(plotPumpProbe(f, interactive=False, autosave=autosave))
+    
+    if autoclose:
+        for f in figures: plt.close(f)
+    
+    return figures
 
 #%%
     
@@ -653,7 +655,7 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
     check_legend.on_clicked(check_legend_callback)
     
     # Since I can, I would also like an interactive 'Save' button
-    save_button = interactiveSaveButton(name, path, sufix='_fit')
+    save_button = interactiveSaveButton(filename, sufix='_fit')
     
     # Once I have all that, I'll show the plot
     plt.show()
