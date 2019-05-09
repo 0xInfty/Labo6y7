@@ -599,11 +599,10 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
     
     # In the upper subplot, I put the Raman-like spectrum
     ax_spectrum = plt.subplot(grid[0,:4])
-    if raman is not False:    
-        plt.plot(raman[:,0], raman[:,1], linewidth=2)
-        lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
-                                   linewidth=2)
-        for l in lspectrum_terms: l.set_visible(False)
+    plt.plot(raman[:,0], raman[:,1], linewidth=2)
+    lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
+                               linewidth=2)
+    for l in lspectrum_terms: l.set_visible(False)
     plt.xlabel("Frecuencia (GHz)")
     plt.ylabel("Amplitud (u.a.)")
     ax_spectrum.xaxis.tick_top()
@@ -648,9 +647,8 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
             for i in range(Nfit_terms):
                 if label == 'Término {:.0f}'.format(i+1):
                     lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
-                    if raman is not False:
-                        lspectrum_terms[i].set_visible(
-                                not lspectrum_terms[i].get_visible())
+                    lspectrum_terms[i].set_visible(
+                            not lspectrum_terms[i].get_visible())
         plt.draw()
     check_legend.on_clicked(check_legend_callback)
     

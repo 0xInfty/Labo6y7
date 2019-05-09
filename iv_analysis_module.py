@@ -301,7 +301,10 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     amplitudes = np.array(amplitudes)
     phases = np.array(phases)
     pi_phases = phases / pi # in radians written as multiples of pi
-    print("¡Listo! Encontramos {} términos".format(Nfit_terms))
+    if Nfit_terms>1:
+        print("¡Listo! Encontramos {} términos".format(Nfit_terms))
+    else:
+        print("¡Listo! Encontramos {} término".format(Nfit_terms))
     print("Frecuencias: {} GHz".format(frequencies))
     
     #%% ---------------------------------------------------------------------------
@@ -324,25 +327,23 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     
     # Raman-like Spectrum parameters
     max_frequency = max(frequencies)
+    frequencies_damping = 1000 * damping_constants / (2*pi) # in GHz
     if max_frequency != 0:
-        frequencies_damping = 1000 * damping_constants / (2*pi) # in GHz
-        
         raman_frequencies = np.arange(0, 1.5*max_frequency, max_frequency/1000)
-        
-        # Raman-like Spectrum per se
-        raman_spectrum_terms = np.zeros((len(raman_frequencies), Nfit_terms))
-        for i in range(Nfit_terms):
-           if angular_frequencies[i]==0:
-              raman_spectrum_terms[:,i] = 0
-           else:
-              raman_spectrum_terms[:,i] = amplitudes[i] * np.imag( 
-                 frequencies[i] / 
-                 (frequencies[i]**2 - raman_frequencies**2 - 
-                 2j * raman_frequencies * frequencies_damping[i]))
-        raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
     else:
-        print("¡Cuidado! No se computa Raman cuando hay sólo un " + 
-              "término puramente exponencial")
+        raman_frequencies = np.array([0, 12])
+        
+    # Raman-like Spectrum per se
+    raman_spectrum_terms = np.zeros((len(raman_frequencies), Nfit_terms))
+    for i in range(Nfit_terms):
+       if angular_frequencies[i]==0:
+          raman_spectrum_terms[:,i] = 0
+       else:
+          raman_spectrum_terms[:,i] = amplitudes[i] * np.imag( 
+             frequencies[i] / 
+             (frequencies[i]**2 - raman_frequencies**2 - 
+             2j * raman_frequencies * frequencies_damping[i]))
+    raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
     
     # What I would like this function to return
     results = np.array([frequencies,
@@ -352,14 +353,9 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
                         pi_phases]).T
 
     # Some other results I need to plot
-    fit = np.array([t, x, fit, *list(fit_terms.T)]).T
-    if max_frequency != 0:
-        raman = np.array([raman_frequencies,
-                          raman_spectrum,
-                          *list(raman_spectrum_terms.T)]).T
-    else:
-        raman = False
-    others = dict(fit = fit, raman = raman, 
+    others = dict(fit = np.array([t, x, fit, *list(fit_terms.T)]).T, 
+                  raman = np.array([raman_frequencies, raman_spectrum,
+                                    *list(raman_spectrum_terms.T)]).T, 
                   chi_squared = chi_squared,
                   Nsingular_values = Nsignificant,
                   t0 = t[0])
