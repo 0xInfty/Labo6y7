@@ -14,7 +14,7 @@ from tkinter import Tk, messagebox
 
 #%%
 
-def interactiveLegend(ax, labels=False, show_default=True, location='best'):
+def interactiveLegend(ax, labels=False, show_default=True, location='best', *args):
 
     """Adds an interactive save button to a given figure.
     
@@ -90,7 +90,7 @@ def interactiveLegend(ax, labels=False, show_default=True, location='best'):
  
     # Create legend buttons
     ax_buttons = plt.axes(position)
-    buttons = wid.CheckButtons(ax_buttons, labels, show_default)
+    buttons = wid.CheckButtons(ax_buttons, labels, show_default, *args)
     legends = buttons.labels
     for l, leg in zip(lines, legends):
         leg.set_color(l.get_color())
@@ -499,14 +499,14 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     meanV = np.mean(V, axis=1)
     Nrepetitions = details['nrepetitions']
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=[6.4, 4.4])
     ax = plt.subplot()
     plt.plot(t, meanV, linewidth=1.5, zorder=100)
     plt.plot(t, V, linewidth=0.8, zorder=0)
     labels = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
     labels = ['Promedio', *labels]
-    plt.ylabel(r'Voltaje ($\mu$V)')
-    plt.xlabel(r'Tiempo (ps)')
+    plt.ylabel(r'Voltaje ($\mu$V)', fontsize=14)
+    plt.xlabel(r'Tiempo (ps)', fontsize=14)
     ax.tick_params(labelsize=12)
     ax.minorticks_on()
     ax.tick_params(axis='y', which='minor', left=False)
@@ -515,10 +515,10 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     
     if interactive:
         show_default = [True for lab in labels]
-        legend_buttons = interactiveLegend(ax, labels, show_default)
+        legend_buttons = interactiveLegend(ax, labels, show_default, fontsize=12)
         save_button = interactiveSaveButton(filename)
     else:
-        plt.legend(labels)
+        plt.legend(labels, fontsize=12, framealpha=1)
     
     if not os.path.isdir(path):
         os.makedirs(path)
@@ -573,12 +573,14 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     
     figures = []
     for f in files:
-        figures.append(plotPumpProbe(f, interactive=False, autosave=autosave))
+        fig = plotPumpProbe(f, interactive=False, autosave=autosave)
+        if autoclose:
+            plt.close(fig)
+        else:
+            figures.append(fig)
     
-    if autoclose:
-        for f in figures: plt.close(f)
-    
-    return figures
+    if not autoclose:
+        return figures
 
 #%%
     
