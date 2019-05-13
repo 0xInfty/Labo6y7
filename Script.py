@@ -14,21 +14,22 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190508_13'
-path = r'F:\Pump-Probe\Iván y Valeria\Mediciones\2019-05-08'
+name = 'M_20190508_02'
+path = r'C:\Users\Luciana\Desktop\Vale e Iván\Mediciones\2019-05-08'
 
 # Plot parameters
-plot = False
-interactive = True
+plot = True
+interactive = False
 autoclose = True
 autosave = True
 
 # Fit parameters
 round_Matlab_needed = True # Pyhon 3.6.2 needs it
-use_full_mean = True
-use_experiments = [0] # First is 0, not 1!
+use_full_mean = False
+use_experiments = [2] # First is 0, not 1!
 send_tail_to_zero = True
 use_fraction = .2
+choose_tf = True
 
 # Create full filename
 filename = os.path.join(path, name+'.txt')
@@ -48,6 +49,9 @@ if plot:
 t, V, details = ivs.loadNicePumpProbe(filename)
 t0 = ivp.interactiveTimeZero(filename, autoclose=autoclose)
 t, V = iva.cropData(t0, t, V)
+if choose_tf:
+    tf = ivp.interactiveTimeZero(filename, autoclose)
+    t, V = iva.cropData(tf, t, V, logic='<=')
 dt = details['dt']
 
 # Use linear prediction
