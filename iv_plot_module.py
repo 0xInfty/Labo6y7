@@ -14,7 +14,8 @@ from tkinter import Tk, messagebox
 
 #%%
 
-def interactiveLegend(ax, labels=False, show_default=True, location='best', *args):
+def interactiveLegend(ax, labels=False, show_default=True, 
+                      location='best', **kwargs):
 
     """Adds an interactive save button to a given figure.
     
@@ -61,7 +62,25 @@ def interactiveLegend(ax, labels=False, show_default=True, location='best', *arg
     # Choose legend location
     number = len(labels)
     height = .05 * number
-    extra = .05 * (number - 1)
+    extra_y = .05 * (number - 1)
+    try:
+        fsize = kwargs['fontsize']
+    except:
+        fsize = 10
+    if fsize == 10:
+        width = .23
+        extra_x = 0
+    else:
+        width = .23 * fsize / 10
+        extra_x = .23 * (fsize/10 - 1)
+    try:
+        x0 = kwargs.pop('x0')
+    except:
+        x0 = (.14, .65)
+    try:
+        y0 = kwargs.pop('y0')
+    except:
+        y0 = (.03, .81)
     if location=='best':
         xmin = min([min(l.get_data()[0]) for l in lines])
         xmax = max([max(l.get_data()[0]) for l in lines])
@@ -78,22 +97,23 @@ def interactiveLegend(ax, labels=False, show_default=True, location='best', *arg
         else:
             location = location + 'right'
     if location=='upper right':
-        position = [.65, .81 - extra, .23, height]
+        position = [x0[1] - extra_x, y0[1] - extra_y, width, height]
     elif location=='upper left':
-        position = [.14, .81 - extra, .23, height]
+        position = [x0[0] + extra_x, y0[1] - extra_y, width, height]
     elif location=='lower right':
-        position = [.14, .81 + extra, .23, height]
+        position = [x0[0] - extra_x, y0[0] + extra_y, width, height]
     elif location=='lower left':
-        position = [.65, .81 + extra, .23, height]
+        position = [x0[1] + extra_x, y0[0] + extra_y, width, height]
     else:
         raise ValueError("Unvalid legend location")
  
     # Create legend buttons
     ax_buttons = plt.axes(position)
-    buttons = wid.CheckButtons(ax_buttons, labels, show_default, *args)
+    buttons = wid.CheckButtons(ax_buttons, labels, show_default)
     legends = buttons.labels
     for l, leg in zip(lines, legends):
         leg.set_color(l.get_color())
+        leg.set(**kwargs)
     for l, sd in zip(lines, show_default):
         l.set_visible(sd)
     
@@ -501,10 +521,10 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     
     fig = plt.figure(figsize=[6.4, 4.4])
     ax = plt.subplot()
-    plt.plot(t, meanV, linewidth=1.5, zorder=100)
     plt.plot(t, V, linewidth=0.8, zorder=0)
+    plt.plot(t, meanV, linewidth=1.5, zorder=100)
     labels = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
-    labels = ['Promedio', *labels]
+    labels.append('Promedio')
     plt.ylabel(r'Voltaje ($\mu$V)', fontsize=14)
     plt.xlabel(r'Tiempo (ps)', fontsize=14)
     ax.tick_params(labelsize=12)
@@ -513,9 +533,16 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     ax.tick_params(length=5)
     ax.grid(axis='x', which='both')
     
+    ax = fig.axes[0]
+    position = ax.get_position()
+    ax.set_position([position.x0*1.2, position.y0*1.3,
+                     position.width, position.height])
+    
     if interactive:
         show_default = [True for lab in labels]
-        legend_buttons = interactiveLegend(ax, labels, show_default, fontsize=12)
+        legend_buttons = interactiveLegend(ax, labels, show_default, 
+                                           fontsize=12,
+                                           x0=(.17, .68), y0=(.06, .84))
         save_button = interactiveSaveButton(filename)
     else:
         plt.legend(labels, fontsize=12, framealpha=1)
