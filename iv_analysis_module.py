@@ -301,7 +301,9 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     amplitudes = np.array(amplitudes)
     phases = np.array(phases)
     pi_phases = phases / pi # in radians written as multiples of pi
-    if Nfit_terms>1:
+    if Nfit_terms==0:
+        raise ValueError("¡Error! No se encontraron términos de ajuste")
+    elif Nfit_terms>1:
         print("¡Listo! Encontramos {} términos".format(Nfit_terms))
     else:
         print("¡Listo! Encontramos {} término".format(Nfit_terms))
