@@ -14,22 +14,23 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190508_02'
-path = r'C:\Users\Luciana\Desktop\Vale e Iván\Mediciones\2019-05-08'
+name = 'M_20190508_03'
+path = r'C:\Users\Luciana\Desktop\Vale e Iván\Mediciones\2019-04-08'
 
 # Plot parameters
 plot = True
-interactive = False
+interactive = True
 autoclose = True
-autosave = True
+autosave = False
 
 # Fit parameters
-round_Matlab_needed = True # Pyhon 3.6.2 needs it
-use_full_mean = False
-use_experiments = [2] # First is 0, not 1!
-send_tail_to_zero = True
-use_fraction = .2
-choose_tf = True
+parameters = dict(
+        round_Matlab_needed = True, # Pyhon 3.6.2 needs it
+        use_full_mean = True,
+        use_experiments = [2], # First is 0, not 1!
+        send_tail_to_zero = True,
+        use_fraction = .2,
+        choose_tf = False)
 
 # Create full filename
 filename = os.path.join(path, name+'.txt')
@@ -49,21 +50,28 @@ if plot:
 t, V, details = ivs.loadNicePumpProbe(filename)
 t0 = ivp.interactiveTimeZero(filename, autoclose=autoclose)
 t, V = iva.cropData(t0, t, V)
-if choose_tf:
+if parameters['choose_tf']:
     tf = ivp.interactiveTimeZero(filename, autoclose)
     t, V = iva.cropData(tf, t, V, logic='<=')
-dt = details['dt']
+else:
+    tf = t[-1]
+parameters['time_range'] = (t0, tf)
 
 # Use linear prediction
-if use_full_mean:
+if parameters['use_full_mean']:
     data = np.mean(V, axis=1)
 else:
-    data = np.mean(V[:, use_experiments], axis=1)
-V0 = min(data[int( (1-use_fraction) * len(data)):])
+    data = np.mean(V[:, parameters['use_experiments']], axis=1)
+V0 = min(data[int( (1-parameters['use_fraction']) * len(data)):])
 data = data - V0
-results, others = iva.linearPrediction(t, data, dt, 
-                                      autoclose=autoclose,
-                                      round_Matlab_needed=round_Matlab_needed)
+results, others = iva.linearPrediction(
+    t, data, details['dt'], 
+    autoclose=autoclose,
+    round_Matlab_needed=parameters['round_Matlab_needed'])
 
 # Plot linear prediction
 fig = ivp.linearPredictionPlot(filename, others, autosave=autosave)
+
+# Generate fit tables
+tables = iva.linearPredictionTables(parameters, results, others)
+iva.copy(tables[0])
