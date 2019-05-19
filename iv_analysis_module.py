@@ -10,6 +10,7 @@ import iv_plot_module as ivp
 import matplotlib.pyplot as plt
 from numpy import pi
 import numpy as np
+from tkinter import Tk
 
 #%%
 
@@ -359,7 +360,70 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
                   raman = np.array([raman_frequencies, raman_spectrum,
                                     *list(raman_spectrum_terms.T)]).T, 
                   chi_squared = chi_squared,
-                  Nsingular_values = Nsignificant,
-                  t0 = t[0])
+                  Nsingular_values = Nsignificant)
     
     return results, others
+
+#%%
+
+def copy(string):
+    
+    """Copies a string to the clipboard.
+    
+    Parameters
+    ----------
+    string : str
+        The string to be copied.
+    
+    Returns
+    -------
+    nothing
+    
+    """
+    
+    r = Tk()
+    r.withdraw()
+    r.clipboard_clear()
+    r.clipboard_append(string)
+    r.update() # now it stays on the clipboard
+    r.destroy()
+    
+    print("Copied")
+    
+#%%
+
+def linearPredictionTables(parameters, results, others):
+
+    terms_heading = ["F (GHz)", "\u03C4 (ps)", "Q", "A (u.a.)", "Fase (\u03C0rad)"]
+    terms_heading = '\t'.join(terms_heading)
+    terms_table = ['\t'.join([str(element) for element in row]) for row in results]
+    terms_table = '\n'.join(terms_table)
+    terms_table = '\n'.join([terms_heading, terms_table])
+    
+    fit_heading = ["Mediciones utilizadas",
+                   "Porcentaje enviado a cero (%)",
+                   "Número de valores singulares",
+                   r"Rango temporal → Inicio (ps)",
+                   r"Rango temporal → Final (ps)",
+                   "Chi cuadrado \u03C7\u00B2"]
+    
+    if parameters['use_full_mean']:
+        used_experiments = 'Todas'
+    else:
+        used_experiments = ', '.join([i+1 
+                                      for i in parameters[used_experiments]])
+    if parameters['send_tail_to_zero']:
+        tail_percent = parameters['use_fraction']*100
+    else:
+        tail_percent = 0
+    
+    fit = [used_experiments,
+           '{:.0f}'.format(tail_percent),
+           str(others['Nsingular_values']),
+           str(parameters['time_range'][0]),
+           str(parameters['time_range'][1]),
+           '{:.2e}'.format(others['chi_squared'])]
+    fit_table = ['\t'.join([h, f]) for h, f in zip(fit_heading, fit)]
+    fit_table = '\n'.join(fit_table)
+    
+    return terms_table, fit_table
