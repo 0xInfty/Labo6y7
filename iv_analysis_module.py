@@ -290,10 +290,10 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
             amplitudes.append( 0 )
             phases.append( 0 )
         elif A2[2*i]==0:
-            amplitudes.append( np.sign(A2[2*i+1])*abs(A2[2*i+1]) )
+            amplitudes.append( abs(A2[2*i+1]) )
             phases.append( np.sign(A2[2*i+1]) * pi/2 )
         elif A2[2*i+1]==0:
-            amplitudes.append( np.sign(A2[2*i])*abs(A2[2*i]) )
+            amplitudes.append( abs(A2[2*i]) )
             phases.append( (1-np.sign(A2[2*i])) * pi/2 )
         else:
             amplitudes.append( np.sqrt(A2[2*i+1]**2 + A2[2*i]**2) )
