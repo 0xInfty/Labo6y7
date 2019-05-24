@@ -400,7 +400,7 @@ def linearPredictionTables(parameters, results, others):
     terms_table = '\n'.join(terms_table)
     terms_table = '\n'.join([terms_heading, terms_table])
     
-    fit_heading = ["Mediciones utilizadas",
+    fit_heading = ["Experimentos utilizados",
                    "Porcentaje enviado a cero (%)",
                    "Número de valores singulares",
                    r"Rango temporal → Inicio (ps)",
@@ -408,10 +408,14 @@ def linearPredictionTables(parameters, results, others):
                    "Chi cuadrado \u03C7\u00B2"]
     
     if parameters['use_full_mean']:
-        used_experiments = 'Todas'
+        used_experiments = 'Todos'
     else:
-        used_experiments = ', '.join([i+1 
+        used_experiments = ', '.join([str('{:.0f}'.format(i+1)) 
                                       for i in parameters['use_experiments']])
+        if len(parameters['use_experiments'])==1:
+            used_experiments = 'Sólo ' + used_experiments
+        else:
+            used_experiments = 'Sólo ' + used_experiments
     if parameters['send_tail_to_zero']:
         tail_percent = parameters['use_fraction']*100
     else:
