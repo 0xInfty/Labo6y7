@@ -411,7 +411,7 @@ def linearPredictionTables(parameters, results, others):
         used_experiments = 'Todas'
     else:
         used_experiments = ', '.join([i+1 
-                                      for i in parameters[used_experiments]])
+                                      for i in parameters['use_experiments']])
     if parameters['send_tail_to_zero']:
         tail_percent = parameters['use_fraction']*100
     else:
