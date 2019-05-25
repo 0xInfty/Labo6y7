@@ -431,3 +431,22 @@ def linearPredictionTables(parameters, results, others):
     fit_table = '\n'.join(fit_table)
     
     return terms_table, fit_table
+
+#%%
+
+def arrayTable(array, heading_list=None, axis=0):
+    
+    if heading_list is not None:
+        heading = '\t'.join(heading_list)
+    if axis==1:
+        array = array.T
+    elif axis!=0:
+        raise ValueError("Axis must be 0 or 1!")
+    items = ['\t'.join([str(element) for element in row]) for row in array]
+    items = '\n'.join(items)
+    if heading_list is not None:
+        table = '\n'.join([heading, items])
+    else:
+        table = items
+    
+    return table

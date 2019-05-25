@@ -39,7 +39,7 @@ filename = os.path.join(path, name+'.txt')
 
 # Plot
 if plot:
-    ivp.plotPumpProbe(filename, interactive=interactive, autosave=autosave)
+    fig_plot = ivp.plotPumpProbe(filename, interactive=interactive, autosave=autosave)
 
 # Several plots
 #ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
@@ -70,7 +70,7 @@ results, others = iva.linearPrediction(
     round_Matlab_needed=parameters['round_Matlab_needed'])
 
 # Plot linear prediction
-fig = ivp.linearPredictionPlot(filename, others, autosave=autosave)
+fig_fit = ivp.linearPredictionPlot(filename, others, autosave=autosave)
 
 # Generate fit tables
 tables = iva.linearPredictionTables(parameters, results, others)
