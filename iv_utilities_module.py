@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May 28 13:58:29 2019
+"""The 'utilities' module contains a few generic tools.
 
-@author: 0xInfty
+@author: Vall
 """
 
 from tkinter import Tk
+import re
 
 #%%
 
@@ -32,6 +32,82 @@ def copy(string):
     r.destroy()
     
     print("Copied")
+
+#%%
+
+def findNumbers(string):
+    
+    """Returns a list of numbers found on a given string
+    
+    Parameters
+    ----------
+    string: str
+        The string where you search.
+    
+    Returns
+    -------
+    list
+        A list of numbers (each an int or float).
+    
+    Raises
+    ------
+    "There's no number in this string" : TypeError
+        If no number is found.
+    """
+    
+    numbers = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", string)
+    
+    if not numbers:
+        raise TypeError("There's no number in this string")
+    
+    for i, n in enumerate(numbers):
+        if '.' in n:
+            numbers[i] = float(n)
+        else:
+            numbers[i] = int(n) 
+    
+    return numbers
+
+#%%
+
+def countingSufix(number):
+    
+    """Returns a number's suffix string to use for counting.
+    
+    Parameters
+    ----------
+    number: int, float
+        Any number, though it is designed to work with integers.
+    
+    Returns
+    -------
+    ans: str
+        A string representing the integer number plus a suffix.
+    
+    Examples
+    --------
+    >> counting_sufix(1)
+    '1st'
+    >> counting_sufix(22)
+    '22nd'
+    >> counting_sufix(1.56)
+    '2nd'
+    
+    """
+    
+    number = round(number)
+    unit = int(str(number)[-1])
+    
+    if unit == 1:
+        ans = 'st'
+    if unit == 2:
+        ans = 'nd'
+    if unit == 3:
+        ans = 'rd'
+    else:
+        ans = 'th'
+    
+    return ans
 
 #%%
 
