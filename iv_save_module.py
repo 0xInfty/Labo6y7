@@ -1,19 +1,76 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 12 10:10:42 2019
+"""The 'save' module loads and saves data, dealing with overwriting.
+
+It could be divided into 3 sections:
+    (1) making new directories and free files to avoid overwriting 
+    ('newDir', 'freeFile')
+    (2) loading data from PumpProbe experiments ('loadPumpProbe', 
+    'loadNicePumpProbe')
+    (2) saving data into files with the option of not overwriting 
+    ('saveTxt')
+    (4) loading data from files ('retrieveHeader', 'retrieveFooter')
+
+new_dir : function
+    Makes and returns a new related directory to avoid overwriting.
+free_file : function
+    Returns a name for a new file to avoid overwriting.
+
+savetxt : function
+    Saves some np.array like data on a '.txt' file.
 
 @author: Vall
 """
 
-"""
-En los archivos que guarda el PumpProbe
-El tiempo está en ps
-Pero el voltaje está en V
-`\(T.T)/´
-"""
-
+import iv_utilities_module as ivu
 import numpy as np
 import os
+
+#%%
+
+def newDir(my_dir, newformat='{}_{}'):
+    
+    """Makes and returns a new directory to avoid overwriting.
+    
+    Takes a directory name 'my_dir' and checks whether it already 
+    exists. If it doesn't, it returns 'dirname'. If it does, it 
+    returns a related unoccupied directory name. In both cases, 
+    the returned directory is initialized.
+    
+    Parameters
+    ----------
+    my_dir : str
+        Desired directory (should also contain full path).
+    
+    Returns
+    -------
+    new_dir : str
+        New directory (contains full path)
+    
+    Yields
+    ------
+    new_dir : directory
+    
+    """
+    
+    sepformat = newformat.split('{}')
+    base = os.path.split(my_dir)[0]
+    
+    new_dir = my_dir
+    while os.path.isdir(new_dir):
+        new_dir = os.path.basename(new_dir)
+        new_dir = new_dir.split(sepformat[-2])[-1]
+        try:
+            new_dir = new_dir.split(sepformat[-1])[0]
+        except ValueError:
+            new_dir = new_dir
+        try:
+            new_dir = newformat.format(my_dir, str(int(new_dir)+1))
+        except ValueError:
+            new_dir = newformat.format(my_dir, 2)
+        new_dir = os.path.join(base, new_dir)
+    os.makedirs(new_dir)
+        
+    return new_dir
 
 #%%
 
@@ -28,14 +85,14 @@ def freeFile(my_file, newformat='{}_{}'):
     Parameters
     ----------
     my_file : str
-        Tentative file name (must contain full path and extension).
+        Tentative filename (must contain full path and extension).
     newformat='{}_{}' : str
         Format string that indicates how to make new names.
     
     Returns
     -------
-    new_fname : str
-        Unoccupied file name (also contains full path and extension).
+    free_file : str
+        Unoccupied filename (also contains full path and extension).
     
     """
     
@@ -84,6 +141,8 @@ def loadPumpProbe(filename):
         Tiempo de Integracion  100.00 
         Retardo cero  -640.00
         '''
+        
+    These files contain time in ps and voltage on V.
         
     Parameters
     ----------
@@ -236,3 +295,236 @@ def loadNicePumpProbe(filename):
                         nrepetitions=nrepetitions))
     
     return t, V, details
+
+#%%
+
+def savetxt(file, datanumpylike, overwrite=False, header='', footer=''):
+    
+    """Takes some array-like data and saves it on a '.txt' file.
+    
+    This function takes some data and saves it on a '.txt' file.
+    If 'overwrite=False', it checks whether 'file' exists or not; if it 
+    already exists, it defines a new file in order to not allow 
+    overwritting. If overwrite=True, it saves the plot on 'file' even if 
+    it already exists.
+    
+    Variables
+    ---------
+    file : string
+        The name you wish (must include full path and extension)
+    datanumpylike : array, list
+        The data to be saved.
+    overwrite=False : bool, optional
+        Indicates whether to overwrite or not.
+    header='' : list, str, optional
+        Data's descriptor. Its elements should be str, one per column.
+        But header could also be a single string.
+    footer='' : dict, str, optional
+        Data's specifications. Its elements and keys should be str. 
+        But footer could also be a single string. Otherwise, an element 
+        could be a tuple containing value and units; i.e.: (100, 'Hz').
+    
+    Return
+    ------
+    nothing
+    
+    Yield
+    -----
+    '.txt' file
+    
+    See Also
+    --------
+    freeFile
+    
+    """
+    
+    base = os.path.split(file)[0]
+    if not os.path.isdir(base):
+        os.makedirs(base)
+    
+    if header != '':
+        if not isinstance(header, str):
+            try:
+                header = '\t'.join(header)
+            except:
+                TypeError('Header should be a list or a string')
+
+    if footer != '':
+        if not isinstance(footer, str):
+            try:
+                aux = []
+                for key, value in footer.items():
+                    if isinstance(value, tuple) and len(value) == 2:
+                        condition = isinstance(value[0], str)
+                        if not condition and isinstance(value[1], str):
+                            value = '"{} {}"'.format(*value)
+                    elif isinstance(value, str):
+                        value = '"{}"'.format(value)
+                    aux.append('{}={}'.format(key, value) + ', ')
+                footer = ''.join(aux)
+            except:
+                TypeError('Header should be a dict or a string')
+
+    file = os.path.join(
+            base,
+            (os.path.splitext(os.path.basename(file))[0] + '.txt'),
+            )
+    
+    if not overwrite:
+        file = freeFile(file)
+        
+    np.savetxt(file, np.array(datanumpylike), 
+               delimiter='\t', newline='\n', header=header, footer=footer)
+    
+    print('Archivo guardado en {}'.format(file))
+    
+    return
+
+#%%
+
+def retrieveFooter(filename, comment_marker='#'):
+    
+    """Retrieves the footer of a .txt file saved with np.savetxt or saveTxt.
+    
+    Parameters
+    ----------
+    filename : str
+        File's root (must include directory and termination).
+    comment_marker='#' : str, optional
+        Sign that indicates a line is a comment on np.savetxt.
+    
+    Returns
+    -------
+    last_line : str, dict
+        File's footer
+    
+    Raises
+    ------
+    ValueError : "Footer not found. Sorry!"
+        When the last line doesn't begin with 'comment_marker'.
+        
+    See Also
+    --------
+    saveTxt
+    
+    """
+    
+    
+    with open(filename, 'r') as f:
+        for line in f:
+            last_line = line
+    
+    if last_line[0] == comment_marker:
+        try:
+            last_line = last_line.split(comment_marker + ' ')[-1]
+            last_line = last_line.split('\n')[0]
+            footer = eval('dict({})'.format(last_line))
+            for key, value in footer.items():
+                try:
+                    number = ivu.findNumbers(value)
+                    if len(number) == 1:
+                        number = number[0]
+                        if len(value.split(' ')) == 2:
+                            footer[key] = (
+                                number, 
+                                value.split(' ')[-1]
+                                )
+                        else:
+                            footer[key] = number
+                except TypeError:
+                    value = value
+        except:
+            footer = last_line
+        return footer
+        
+    else:
+        raise ValueError("No footer found. Sorry!")
+
+#%%
+
+def retrieveHeader(filename, comment_marker='#'):
+    
+    """Retrieves the header of a .txt file saved with np.savetxt or saveTxt.
+    
+    Parameters
+    ----------
+    filename : str
+        File's root (must include directory and termination).
+    comment_marker='#' : str, optional
+        Sign that indicates a line is a comment on np.savetxt.
+    
+    Returns
+    -------
+    last_line : str, list
+        File's header
+    
+    Raises
+    ------
+    ValueError : "Header not found. Sorry!"
+        When the first line doesn't begin with 'comment_marker'.
+    
+    See Also
+    --------
+    saveTxt
+    
+    """
+    
+    
+    with open(filename, 'r') as f:
+        for line in f:
+            first_line = line
+            break
+    
+    if first_line[0] == comment_marker:
+        header = first_line.split(comment_marker + ' ')[-1]
+        header = header.split('\n')[0]
+        header = header.split('\t')
+        if len(header) > 1:
+            return header
+        else:
+            return header[0]
+        
+    else:
+        raise ValueError("No header found. Sorry!")
+
+#%%
+
+def loadTxt(filename, comment_marker='#', **kwargs):
+    
+    """Loads data of a .txt file saved with np.savetxt or saveTxt.
+
+    Parameters
+    ----------
+    filename : str
+        File's root (must include directory and termination).
+    comment_marker='#' : str, optional
+        Sign that indicates a line is a comment on np.savetxt.
+
+    Returns
+    -------
+    data : np.array
+        File's data.
+    header : str, list or None
+        File's header.
+    footer : str, dict or None
+        File's footer.
+
+    See also
+    --------
+    saveTxt
+    retrieveHeader
+    retrieveFooter
+    
+    """
+    
+    data = np.loadtxt(filename, comments=comment_marker, **kwargs)
+    try:
+        header = retrieveHeader(filename, comment_marker)
+    except ValueError:
+        header = None
+    try:
+        footer = retrieveFooter(filename, comment_marker)
+    except ValueError:
+        footer = None
+    
+    return data, header, footer
