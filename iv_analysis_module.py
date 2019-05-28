@@ -7,10 +7,10 @@ Created on Wed Apr 17 14:28:53 2019
 
 import iv_plot_module as ivp
 #import iv_save_module as ivs
+import iv_utilities_module as ivu
 import matplotlib.pyplot as plt
 from numpy import pi
 import numpy as np
-from tkinter import Tk
 
 #%%
 
@@ -74,6 +74,29 @@ def roundMatlab(x, round_Matlab_needed=True):
 #%%
 
 def cropData(t0, t, *args, **kwargs):
+    
+    """Crops data according to a certain logic specifier.
+    
+    By default, the logic specifier is '>=', so data 't' is cropped from 
+    certain value 't0'. It is flexible though. For example, if a parameter 
+    'logic="<="' is delivered as argument to this function, then data 't' will 
+    be cropped up to certain value 't0'.
+    
+    Parameters
+    ----------
+    t0 : int, float
+        Value to apply logic specifier to.
+    t : np.array
+        Data to apply logic specifier to.
+    logic='>=' : str
+        Logic specifier.
+    
+    Returns
+    -------
+    new_args : np.array
+        Resultant data.
+    
+    """
     
     try:
         logic = kwargs['logic']
@@ -148,19 +171,55 @@ Problems so far:
 
 def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     
-    ## Kind of answer we want...
-    #x = c1.*exp(-b1.*t).*cos(w1*t+p1) + c2.*exp(-b2.*t).*cos(w2.*t+p2) + 
-    #    + c3.*exp(-b3.*t.^2) + noise + coherent_artifact;
+    """Applies linear prediction fit to data.
     
-    ## To do that we could define...
-    #cn = 8e-15
-    #noise = []
-    #for i in range(50):
-    #    noise.append(np.cos(2*pi*np.random.rand() * (t+dt) / (2*dt)))
-    #noise = np.array(noise)
-    #noise = cn * sum(noise)
-    #coherent_artifact = 1e-15 * np.exp(-t**2 / 2 / 0.07**2)
-    # Proporcional to cross-correlation
+    Given a set of data :math:`t, x` with independent step :math:`dt`, it looks 
+    for the best fit according to the model...
+    
+    .. math:: f(t) = \sum_i A.cos(\omega_i t + \phi).e^{-\frac{t}{\tau}}
+    
+    This method does not need initial values for the parameters to fit.
+    
+    In order for it to work, it is necesary though to have a uniform 
+    independent variable whose elements are multiples :math:`t_i=i.dt` of a 
+    constant step :math:`dt`
+    
+    Parameters
+    ----------
+    t : np.array
+        Independent variable :math:`t` in ps.
+    x : np.array
+        Dependent variable :math:`x` in any unit.
+    dt : float
+        Independent variable's step :math:`dt` in ps.
+    autoclose=True : bool
+        Says whether to close the intermediate eigenvalues' plot or not.
+    round_Matlab_needed=True : bool
+        Says whether a Matlab like round function is needed or not.
+    
+    Returns
+    -------
+    results : np.array
+        Parameters that best fit the data. On its columns it holds...
+        ...frequency :math:`f=2\pi\omega` in Hz.
+        ...characteristic time :math:`\tau_i` in ps.
+        ...quality factors :math:`Q_i=\frac{\omega}{2\gamma}=\pi f \tau`
+        ...amplitudes :math:`A_i` in the same units as :math:`x`
+        ...phases :math:`\phi_i` written in multiples of :math:`\pi`
+    other_results : dict
+        Other fit parameters...
+        ...chi squared :math:`\chi^2`
+        ...number of significant values :math:`N`
+    plot_results : ivu.InstancesDict
+        Fit parameters that allow plotting. In particular, it holds...
+        ...'fit' which includes time, data, fit and fit terms.
+        ...'raman' which includes frequency, fit spectrum and fit terms spectra.
+    
+    See also
+    --------
+    ivp.linearPredictionPlot
+    
+    """
     
     #%% ---------------------------------------------------------------------------
     # FREQUENCIES AND DAMPING FACTORS
@@ -178,11 +237,6 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     eigenvectors = eigenvectors[:, ordered_index] # Eigenvectors on columns
     #eigenvectors = np.array([l/l[0] for l in eigenvectors.T]).T # Normalize
     rank = np.linalg.matrix_rank(np.diag(eigenvalues)) # Size measure
-    
-    """
-    La segunda columna de eV la tengo con signo invertido respecto a Matlab.
-    ==> Obtengo resultados distintos para U.
-    """
     
     # Choose number of significant values
     Nsignificant = 4
@@ -321,7 +375,8 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
                                                      phases)]).T
     fit = sum(fit_terms.T)
     chi_squared = sum( (fit - x)**2 ) / N # Best if absolute is smaller
-    
+    print("Chi cuadrado \u03C7\u00B2: {:.2e}".format(chi_squared))
+                     
     ## Statistics of the residue
     #residue = x - fit
     #residue_transform = abs(np.fft.rfft(residue))
@@ -356,43 +411,19 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
                         pi_phases]).T
 
     # Some other results I need to plot
-    others = dict(fit = np.array([t, x, fit, *list(fit_terms.T)]).T, 
-                  raman = np.array([raman_frequencies, raman_spectrum,
-                                    *list(raman_spectrum_terms.T)]).T, 
-                  chi_squared = chi_squared,
-                  Nsingular_values = Nsignificant)
+    other_results = dict(chi_squared = chi_squared,
+                         Nsingular_values = Nsignificant)
+    # And the data to plot
+    plot_results = ivu.InstancesDict(dict(
+            fit = np.array([t, x, fit, *list(fit_terms.T)]).T, 
+            raman = np.array([raman_frequencies, raman_spectrum,
+                              *list(raman_spectrum_terms.T)]).T))
     
-    return results, others
-
+    return results, other_results, plot_results
+   
 #%%
 
-def copy(string):
-    
-    """Copies a string to the clipboard.
-    
-    Parameters
-    ----------
-    string : str
-        The string to be copied.
-    
-    Returns
-    -------
-    nothing
-    
-    """
-    
-    r = Tk()
-    r.withdraw()
-    r.clipboard_clear()
-    r.clipboard_append(string)
-    r.update() # now it stays on the clipboard
-    r.destroy()
-    
-    print("Copied")
-    
-#%%
-
-def linearPredictionTables(parameters, results, others):
+def linearPredictionTables(parameters, results, other_results):
 
     terms_heading = ["F (GHz)", "\u03C4 (ps)", "Q", "A (u.a.)", "Fase (\u03C0rad)"]
     terms_heading = '\t'.join(terms_heading)
@@ -408,27 +439,27 @@ def linearPredictionTables(parameters, results, others):
                    r"Rango temporal → Final (ps)",
                    "Chi cuadrado \u03C7\u00B2"]
     
-    if parameters['use_full_mean']:
+    if parameters.use_full_mean:
         used_experiments = 'Todos'
     else:
         used_experiments = ', '.join([str('{:.0f}'.format(i+1)) 
-                                      for i in parameters['use_experiments']])
-        if len(parameters['use_experiments'])==1:
+                                      for i in parameters.use_experiments])
+        if len(parameters.use_experiments)==1:
             used_experiments = 'Sólo ' + used_experiments
         else:
             used_experiments = 'Sólo ' + used_experiments
-    if parameters['send_tail_to_zero']:
-        tail_percent = parameters['use_fraction']*100
+    if parameters.send_tail_to_zero:
+        tail_percent = parameters.use_fraction*100
     else:
         tail_percent = 0
     
     fit = [used_experiments,
-           str(others['Nsingular_values']),
+           str(other_results['Nsingular_values']),
            '{:.0f}'.format(tail_percent),
-           str(parameters['V0']),
-           str(parameters['time_range'][0]),
-           str(parameters['time_range'][1]),
-           '{:.2e}'.format(others['chi_squared'])]
+           str(parameters.voltage_zero),
+           str(parameters.time_range[0]),
+           str(parameters.time_range[1]),
+           '{:.2e}'.format(other_results['chi_squared'])]
     fit_table = ['\t'.join([h, f]) for h, f in zip(fit_heading, fit)]
     fit_table = '\n'.join(fit_table)
     
