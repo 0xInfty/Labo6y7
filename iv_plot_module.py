@@ -301,9 +301,9 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
 
 #%%
  
-def interactiveTimeZero(filename, autoclose=True):
+def interactiveTimeSelector(filename, autoclose=True):
     
-    """Allows to select a zero time on a Pump Probe file.
+    """Allows to select a particular time instant on a Pump Probe file.
     
     Parameters
     ----------
@@ -314,7 +314,7 @@ def interactiveTimeZero(filename, autoclose=True):
     
     Returns
     -------
-    t0 : float
+    ti : float
         Selected value.
     
     See also
@@ -325,13 +325,13 @@ def interactiveTimeZero(filename, autoclose=True):
     t, V, details = loadNicePumpProbe(filename)
     fig = plotPumpProbe(filename, autosave=False)
     ax = fig.axes[0]
-    t0 = interactiveValueSelector(ax, y_value=False)
-    t0 = t[np.argmin(abs(t-t0))]
+    ti = interactiveValueSelector(ax, y_value=False)
+    ti = t[np.argmin(abs(t-ti))]
     
     if autoclose:
         plt.close(fig)
 
-    return t0
+    return ti
 
 #%%
 
@@ -484,7 +484,7 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
         
     Parameters
     ----------
-    file : str
+    filename : str
         File's root (must include directory and termination).
     interactive=True : bool
         Says whether to make an interactive plot or not.
@@ -503,7 +503,7 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     Raises
     ------
     pngfile : .png file
-        PNG image file (only if 'autosave=True').
+        PNG image file. Only raised if 'autosave=True'.
     
     See also
     --------
@@ -572,20 +572,23 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     
     Parameters
     ----------
-    file : str
-        File's root (must include directory and termination).
-    save=True : bool
+    path : str
+        Files' folder (must include directory).
+    autosave=True : bool
         Says whether to save or not.
+    autoclose=False : bool
+        Says whether to close the figures or not.
     
     Returns
     -------
     figures : list
-        A list containing plt.Figure instances.     
+        A list containing plt.Figure instances -only returned if autoclose is 
+        deactivated.
     
     Raises
     ------
     pngfiles : .png files
-        PNG image files (only if 'autosave=True').
+        PNG image files. Only raised if 'autosave=True'.
     
     See also
     --------
@@ -611,11 +614,47 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
 
 #%%
     
-def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
+def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
 
+    """Plots the results of a linear prediction plot.
+    
+    Parameters
+    ----------
+    filename : str
+        File's root (must include directory and termination).
+    plot_results : ivu.InstancesDict
+        Fit results that allow to plot. Must include...
+        ...numpy array 'fit', that holds time, data, fit and fit terms
+        ...numpy.array 'raman', that holds frequencies, fit spectrum and fit 
+        terms' spectrum.
+    autosave=True : bool
+        Says whether to save or not.
+    showgrid=False : bool
+        Says whether to show or not the vertical grid on the time space plot.
+    
+    Returns
+    -------
+    fig : plt.Figure instance
+        Figure containing the desired plot.
+    legend_buttons : wid.CheckButtons
+        Interactive legend. Only returned if making an interactive plot.
+    save_button : wid.Button
+        Interactive save button. Only returned if making an interactive plot.        
+    
+    Raises
+    ------
+    pngfile : .png file
+        PNG image file. Only raised if 'autosave=True'.
+    
+    See also
+    --------
+    iva.linearPrediction
+    
+    """
+    
     # First I deglose data
-    fit = others['fit']
-    raman = others['raman']
+    fit = plot_results.fit
+    raman = plot_results.raman
     Nfit_terms = fit.shape[1] - 3
     
     # In order to save, if needed, I will need...
@@ -657,17 +696,17 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
     
     # Because it's pretty, I make an interactive legend
     ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
-    check_legend = wid.CheckButtons(ax_legend, ('Data', 
+    legend_buttons = wid.CheckButtons(ax_legend, ('Data', 
                                      'Ajuste', 
                                      *['Término {:.0f}'.format(i+1) 
                                      for i in range(Nfit_terms)]), 
                         (True, True, *[False for i in range(Nfit_terms)]))
-    check_legend.labels[1].set_color(lfit.get_color())
-    for leg, l in zip(check_legend.labels[2:], lfit_terms):
+    legend_buttons.labels[1].set_color(lfit.get_color())
+    for leg, l in zip(legend_buttons.labels[2:], lfit_terms):
         leg.set_color(l.get_color())
     
     # For that, I'll need a callback function  
-    def check_legend_callback(label):
+    def legend_callback(label):
         if label == 'Data':
             ldata.set_visible(not ldata.get_visible())
         elif label == 'Ajuste':
@@ -679,7 +718,7 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
                     lspectrum_terms[i].set_visible(
                             not lspectrum_terms[i].get_visible())
         plt.draw()
-    check_legend.on_clicked(check_legend_callback)
+    legend_buttons.on_clicked(legend_callback)
     
     # Since I can, I would also like an interactive 'Save' button
     save_button = interactiveSaveButton(filename, sufix='_fit')
@@ -696,4 +735,4 @@ def linearPredictionPlot(filename, others, autosave=True, showgrid=False):
         plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
         save_button.ax.set_visible(True)
         
-    return fig
+    return fig, legend_buttons, save_button
