@@ -18,17 +18,17 @@ name = 'M_20190508_03'
 path = r'C:\Users\Luciana\Desktop\Vale e Iván\Mediciones\2019-04-08'
 
 # Plot parameters
-plot = True
-interactive = True
+plot = False
+interactive = False
 autoclose = True
-autosave = False
+autosave = True
 
 # Fit parameters
 parameters = dict(
         round_Matlab_needed = True, # Pyhon 3.6.2 needs it
         use_full_mean = True,
-        use_experiments = [2], # First is 0, not 1!
-        send_tail_to_zero = True,
+        use_experiments = [0], # First is 0, not 1!
+        send_tail_to_zero = False,
         use_fraction = .2,
         choose_tf = False)
 
@@ -48,8 +48,12 @@ if plot:
 
 # Load data
 t, V, details = ivs.loadNicePumpProbe(filename)
+
+# Choose initial time t0
 t0 = ivp.interactiveTimeZero(filename, autoclose=autoclose)
 t, V = iva.cropData(t0, t, V)
+
+# Choose final time tf
 if parameters['choose_tf']:
     tf = ivp.interactiveTimeZero(filename, autoclose)
     t, V = iva.cropData(tf, t, V, logic='<=')
@@ -57,13 +61,21 @@ else:
     tf = t[-1]
 parameters['time_range'] = (t0, tf)
 
-# Use linear prediction
+# Choose data to fit
 if parameters['use_full_mean']:
     data = np.mean(V, axis=1)
 else:
     data = np.mean(V[:, parameters['use_experiments']], axis=1)
-V0 = min(data[int( (1-parameters['use_fraction']) * len(data)):])
+
+# Make a vertical shift
+if parameters['send_tail_to_zero']:
+    V0 = min(data[int( (1-parameters['use_fraction']) * len(data)):]) 
+else:
+    V0 = 0
 data = data - V0
+parameters['V0'] = V0
+
+# Use linear prediction
 results, others = iva.linearPrediction(
     t, data, details['dt'], 
     autoclose=autoclose,

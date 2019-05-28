@@ -401,8 +401,9 @@ def linearPredictionTables(parameters, results, others):
     terms_table = '\n'.join([terms_heading, terms_table])
     
     fit_heading = ["Experimentos utilizados",
-                   "Porcentaje enviado a cero (%)",
                    "Número de valores singulares",
+                   "Porcentaje enviado a cero (%)",
+                   "Corrimiento V\u2080 (\u03BCV)",               
                    r"Rango temporal → Inicio (ps)",
                    r"Rango temporal → Final (ps)",
                    "Chi cuadrado \u03C7\u00B2"]
@@ -422,8 +423,9 @@ def linearPredictionTables(parameters, results, others):
         tail_percent = 0
     
     fit = [used_experiments,
-           '{:.0f}'.format(tail_percent),
            str(others['Nsingular_values']),
+           '{:.0f}'.format(tail_percent),
+           str(parameters['V0']),
            str(parameters['time_range'][0]),
            str(parameters['time_range'][1]),
            '{:.2e}'.format(others['chi_squared'])]
