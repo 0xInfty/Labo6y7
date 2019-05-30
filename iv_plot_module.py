@@ -522,7 +522,7 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
     fig = plt.figure(figsize=[6.4, 4.4])
     ax = plt.subplot()
     plt.plot(t, V, linewidth=0.8, zorder=0)
-    plt.plot(t, meanV, linewidth=1.5, zorder=100)
+    plt.plot(t, meanV, linewidth=1.5, zorder=2)
     labels = ['Experimento {:.0f}'.format(i+1) for i in range(Nrepetitions)]
     labels.append('Promedio')
     plt.ylabel(r'Voltaje ($\mu$V)', fontsize=14)
