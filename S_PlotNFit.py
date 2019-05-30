@@ -15,8 +15,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190408_04'
-path = r'C:\Users\Luciana\Desktop\Vale e Iván\Mediciones\2019-04-08'
+name = 'M_20190527_08'
+path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-27'
 
 # Plot parameters
 plot_params = dict(
@@ -33,6 +33,7 @@ fit_params = dict(
         use_full_mean = True,
         use_experiments = [0], # First is 0, not 1!
         send_tail_to_zero = False,
+        tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
         choose_tf = False
@@ -42,7 +43,7 @@ fit_params = ivu.InstancesDict(fit_params)
 # Create full filename
 filename = os.path.join(path, name+'.txt')
 
-#%% PLOT -------------------------------------------------------------------------
+#%% PLOT --------------------------------------------------------------------------
 
 # Plot
 if plot_params.plot:
@@ -80,7 +81,9 @@ else:
 
 # Make a vertical shift
 if fit_params.send_tail_to_zero:
-    V0 = min(data[int( (1-fit_params.use_fraction) * len(data)):]) 
+    function = eval('np.{}'.format(fit_params.tail_method))
+    V0 = function(data[int( (1-fit_params.use_fraction) * len(data)):])
+    del function
 else:
     V0 = 0
 data = data - V0

@@ -434,6 +434,7 @@ def linearPredictionTables(parameters, results, other_results):
     fit_heading = ["Experimentos utilizados",
                    "Número de valores singulares",
                    "Porcentaje enviado a cero (%)",
+                   "Método de corrimiento",
                    "Corrimiento V\u2080 (\u03BCV)",               
                    r"Rango temporal → Inicio (ps)",
                    r"Rango temporal → Final (ps)",
@@ -452,10 +453,19 @@ def linearPredictionTables(parameters, results, other_results):
         tail_percent = parameters.use_fraction*100
     else:
         tail_percent = 0
+    if parameters.tail_method=='mean':
+        method = 'Promedio'
+    elif parameters.tail_method=='min':
+        method = 'Mínimo'
+    elif parameters.tail_method=='max':
+        method = 'Máximo'
+    else:
+        method = 'Desconocido'
     
     fit = [used_experiments,
            str(other_results['Nsingular_values']),
            '{:.0f}'.format(tail_percent),
+           method,
            str(parameters.voltage_zero),
            str(parameters.time_range[0]),
            str(parameters.time_range[1]),
