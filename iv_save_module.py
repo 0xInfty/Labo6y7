@@ -298,7 +298,7 @@ def loadNicePumpProbe(filename):
 
 #%%
 
-def savetxt(file, datanumpylike, overwrite=False, header='', footer=''):
+def saveTxt(file, datanumpylike, overwrite=False, header='', footer=''):
     
     """Takes some array-like data and saves it on a '.txt' file.
     
