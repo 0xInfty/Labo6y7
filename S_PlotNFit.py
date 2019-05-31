@@ -15,15 +15,17 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190506_14'
-path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-06'
+name = 'M_20190508_05'
+path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-08'
+
+# Save parameters
+autosave = True
 
 # Plot parameters
 plot_params = dict(
         plot = False,
         interactive = False,
         autoclose = True,
-        autosave = True
         )
 plot_params = ivu.InstancesDict(plot_params)
 
@@ -48,7 +50,7 @@ filename = os.path.join(path, name+'.txt')
 if plot_params.plot:
     ivp.plotPumpProbe(filename, 
                       interactive=plot_params.interactive, 
-                      autosave=plot_params.autosave)
+                      autosave=autosave)
 
 # Several plots
 #ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
@@ -93,9 +95,11 @@ del V0
 results, other_results, plot_results = iva.linearPrediction(
     t, data, details['dt'], 
     autoclose=plot_params.autoclose)
+if autosave:
+    ivs.linearPredictionSave(filename, results, other_results, fit_params)
 
 # Plot linear prediction
-ivp.linearPredictionPlot(filename, plot_results, autosave=plot_params.autosave)
+ivp.linearPredictionPlot(filename, plot_results, autosave=autosave)
 
 # Generate fit tables
 tables = iva.linearPredictionTables(fit_params, results, other_results)
