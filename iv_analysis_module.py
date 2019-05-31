@@ -177,8 +177,6 @@ def linearPrediction(t, x, dt, autoclose=True):
         Independent variable's step :math:`dt` in ps.
     autoclose=True : bool
         Says whether to close the intermediate eigenvalues' plot or not.
-    round_Matlab_needed=True : bool
-        Says whether a Matlab like round function is needed or not.
     
     Returns
     -------
