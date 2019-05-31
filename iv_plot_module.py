@@ -97,13 +97,13 @@ def interactiveLegend(ax, labels=False, show_default=True,
         else:
             location = location + 'right'
     if location=='upper right':
-        position = [x0[1] - extra_x, y0[1] - extra_y, width, height]
+        position = [x0[1] + extra_x, y0[1] + extra_y, width, height]
     elif location=='upper left':
-        position = [x0[0] + extra_x, y0[1] - extra_y, width, height]
+        position = [x0[0] - extra_x, y0[1] + extra_y, width, height]
     elif location=='lower right':
-        position = [x0[0] - extra_x, y0[0] + extra_y, width, height]
+        position = [x0[0] + extra_x, y0[0] - extra_y, width, height]
     elif location=='lower left':
-        position = [x0[1] + extra_x, y0[0] + extra_y, width, height]
+        position = [x0[1] - extra_x, y0[0] - extra_y, width, height]
     else:
         raise ValueError("Unvalid legend location")
  
@@ -473,7 +473,7 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, interactive=False, autosave=True):
+def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
 
     """Plots all PumpProbe experiments from a file and its mean.
     
@@ -542,10 +542,10 @@ def plotPumpProbe(filename, interactive=False, autosave=True):
         show_default = [True for lab in labels]
         legend_buttons = interactiveLegend(ax, labels, show_default, 
                                            fontsize=12,
-                                           x0=(.17, .68), y0=(.06, .84))
+                                           x0=(.17, .68), y0=(.06, .84), **kwargs)
         save_button = interactiveSaveButton(filename)
     else:
-        plt.legend(labels, fontsize=12, framealpha=1)
+        plt.legend(labels, fontsize=12, framealpha=1, **kwargs)
     
     if not os.path.isdir(path):
         os.makedirs(path)
