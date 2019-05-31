@@ -48,11 +48,11 @@ def roundMatlab(x):
         else:
             y = round(x)
             
-        return y
+        return int(y)
     
     else:
     
-        return round(x)
+        return int(round(x))
 
 #%%
 
