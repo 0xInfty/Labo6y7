@@ -298,19 +298,86 @@ def loadNicePumpProbe(filename):
 
 #%%
 
-def saveTxt(file, datanumpylike, overwrite=False, header='', footer=''):
+def linearPredictionSave(filename, results, other_results, fit_parameters, 
+                         overwrite=False):
+    
+    """Saves the data from a linear prediction fit on '.txt' file.
+    
+    Parameters
+    ----------
+    filename : str
+        The name you wish (must include full path and extension)
+    results : np.array
+        Parameters that best fit the data. On its columns it holds...
+        ...frequency :math:`f=2\pi\omega` in Hz.
+        ...characteristic time :math:`\tau_i` in ps.
+        ...quality factors :math:`Q_i=\frac{\omega}{2\gamma}=\pi f \tau`
+        ...amplitudes :math:`A_i` in the same units as :math:`x`
+        ...phases :math:`\phi_i` written in multiples of :math:`\pi`
+    other_results : dict
+        Other fit parameters...
+        ...chi squared :math:`\chi^2`
+        ...number of significant values :math:`N`
+    fit_parameters : ivu.InstancesDict
+        Several fit configuration parameters, including...
+            use_full_mean=True : bool
+                Whether to use full mean or not.
+            send_tail_to_zero=False : bool
+                Whether to apply a vertical shift to send the last data to zero 
+                or not.
+            voltage_zero : float, int
+                Vertical shift.
+            time_range : tuple
+                Initial and final time to fit.
+    overwrite=False
+        Whether to allow overwriting or not.
+    
+    Returns
+    -------
+    None
+    
+    Yields
+    ------
+    .txt file
+    
+    See also
+    --------
+    saveTxt
+    
+    """
+    
+    path, name = os.path.split(filename)
+    filename = os.path.join(path, 'Ajustes', name)
+    
+    fit_params = fit_parameters.__dict__ # Because it's an ivu.InstancesDict
+    
+    footer = {}
+    footer.update(other_results)
+    footer.update(fit_params)
+    
+    saveTxt(filename, results,
+            header=["F (GHz)", "Tau (ps)", "Q", "A (u.a.)", "Phi (pi rad)"],
+            footer=footer,
+            overwrite=overwrite, newformat='{}_v{}')
+    
+    return
+
+#%%
+
+def saveTxt(filename, datanumpylike, header='', footer='', 
+            overwrite=False, newformat='{}_{}'):
     
     """Takes some array-like data and saves it on a '.txt' file.
     
     This function takes some data and saves it on a '.txt' file.
-    If 'overwrite=False', it checks whether 'file' exists or not; if it 
+    If 'overwrite=False', it checks whether 'filename' exists or not; if it 
     already exists, it defines a new file in order to not allow 
-    overwritting. If overwrite=True, it saves the plot on 'file' even if 
+    overwritting. If overwrite=True, it saves on 'filename' even if 
     it already exists.
     
     Variables
     ---------
-    file : string
+    filename : string
         The name you wish (must include full path and extension)
     datanumpylike : array, list
         The data to be saved.
@@ -338,7 +405,7 @@ def saveTxt(file, datanumpylike, overwrite=False, header='', footer=''):
     
     """
     
-    base = os.path.split(file)[0]
+    base = os.path.split(filename)[0]
     if not os.path.isdir(base):
         os.makedirs(base)
     
@@ -365,18 +432,18 @@ def saveTxt(file, datanumpylike, overwrite=False, header='', footer=''):
             except:
                 TypeError('Header should be a dict or a string')
 
-    file = os.path.join(
+    filename = os.path.join(
             base,
-            (os.path.splitext(os.path.basename(file))[0] + '.txt'),
+            (os.path.splitext(os.path.basename(filename))[0] + '.txt'),
             )
     
     if not overwrite:
-        file = freeFile(file)
+        filename = freeFile(filename, newformat=newformat)
         
-    np.savetxt(file, np.array(datanumpylike), 
+    np.savetxt(filename, np.array(datanumpylike), 
                delimiter='\t', newline='\n', header=header, footer=footer)
     
-    print('Archivo guardado en {}'.format(file))
+    print('Archivo guardado en {}'.format(filename))
     
     return
 
