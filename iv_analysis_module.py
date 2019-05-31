@@ -344,7 +344,7 @@ def linearPrediction(t, x, dt, autoclose=True):
     print("Frecuencias: {} GHz".format(frequencies))
     
     #%% ---------------------------------------------------------------------------
-    # FIT, PLOTS AND STATISTICS
+    # FIT AND RESULTS
     # -----------------------------------------------------------------------------
     
     fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
@@ -362,26 +362,6 @@ def linearPrediction(t, x, dt, autoclose=True):
     #residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
     #plt.plot(residue_frequencies, residue_transform)
     
-    # Raman-like Spectrum parameters
-    max_frequency = max(frequencies)
-    frequencies_damping = 1000 * damping_constants / (2*pi) # in GHz
-    if max_frequency != 0:
-        raman_frequencies = np.arange(0, 1.5*max_frequency, max_frequency/1000)
-    else:
-        raman_frequencies = np.array([0, 12])
-        
-    # Raman-like Spectrum per se
-    raman_spectrum_terms = np.zeros((len(raman_frequencies), Nfit_terms))
-    for i in range(Nfit_terms):
-       if angular_frequencies[i]==0:
-          raman_spectrum_terms[:,i] = 0
-       else:
-          raman_spectrum_terms[:,i] = amplitudes[i] * np.imag( 
-             frequencies[i] / 
-             (frequencies[i]**2 - raman_frequencies**2 - 
-             2j * raman_frequencies * frequencies_damping[i]))
-    raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
-    
     # What I would like this function to return
     results = np.array([frequencies,
                         characteristic_times,
@@ -392,14 +372,45 @@ def linearPrediction(t, x, dt, autoclose=True):
     # Some other results I need to plot
     other_results = dict(chi_squared = chi_squared,
                          Nsingular_values = Nsignificant)
-    # And the data to plot
-    plot_results = ivu.InstancesDict(dict(
-            fit = np.array([t, x, fit, *list(fit_terms.T)]).T, 
-            raman = np.array([raman_frequencies, raman_spectrum,
-                              *list(raman_spectrum_terms.T)]).T))
     
-    return results, other_results, plot_results
-   
+    return results, other_results
+
+#%%
+
+def ramanLikeSpectrum(results):
+    
+    """Makes a Raman-like spectrum for the linear prediction results"""
+    
+    frequencies = results[:,0]
+    characteristic_times = results[:,1]
+    amplitudes = results[:,3]
+    Nfit_terms = len(frequencies)
+    
+    # Raman-like Spectrum parameters
+    max_frequency = max(frequencies)
+    frequencies_damping = 1000 / (2*pi*characteristic_times) # in GHz
+    if max_frequency != 0:
+        raman_frequencies = np.arange(0, 1.5*max_frequency, max_frequency/1000)
+    else:
+        raman_frequencies = np.array([0, 12])
+        
+    # Raman-like Spectrum per se
+    raman_spectrum_terms = np.zeros((len(raman_frequencies), Nfit_terms))
+    for i in range(Nfit_terms):
+       if frequencies[i]==0:
+          raman_spectrum_terms[:,i] = 0
+       else:
+          raman_spectrum_terms[:,i] = amplitudes[i] * np.imag( 
+             frequencies[i] / 
+             (frequencies[i]**2 - raman_frequencies**2 - 
+             2j * raman_frequencies * frequencies_damping[i]))
+    raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
+
+    raman = np.array([raman_frequencies, raman_spectrum,
+                      *list(raman_spectrum_terms.T)]).T
+    
+    return raman
+
 #%%
 
 def linearPredictionTables(parameters, results, other_results):

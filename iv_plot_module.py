@@ -614,7 +614,7 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
 
 #%%
     
-def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
+def linearPredictionPlot(filename, results, autosave=True, showgrid=False):
 
     """Plots the results of a linear prediction plot.
     
@@ -652,9 +652,17 @@ def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
     
     """
     
+    # BIG PROBLEM! I NEED THE TIME!
+    
     # First I deglose data
-    fit = plot_results.fit
-    raman = plot_results.raman
+    fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
+                         for a, b, q, omega, phi in results.T])
+    fit_total = sum(fit_terms.T)
+    fit = np.array([t, fit_total, *fit_terms]).T
+    
+    
+    # OTHER BIG PROBLEM! MODULES ARE CROSSED BECAUSE I SHOULD USE IVA.RAMAN!
+                  
     Nfit_terms = fit.shape[1] - 3
     
     # In order to save, if needed, I will need...
