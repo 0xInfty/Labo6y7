@@ -6,7 +6,6 @@ Created on Wed Apr 17 14:28:53 2019
 """
 
 import iv_plot_module as ivp
-#import iv_save_module as ivs
 import iv_utilities_module as ivu
 import matplotlib.pyplot as plt
 from numpy import pi
@@ -14,7 +13,8 @@ import numpy as np
 
 #%%
 
-def roundMatlab(x, round_Matlab_needed=True):
+def roundMatlab(x):
+    
     """Returns round value in Matlab 2014's style.
     
     In Pyhon 3.7.3...
@@ -29,9 +29,6 @@ def roundMatlab(x, round_Matlab_needed=True):
     ----------
     x : float
         Number to be rounded.
-    round_Matlab_needed=True : bool
-        Whether your Python version needs this function to round like Matlab 
-        or not. Python 3.7.3 needs it.
     
     Returns
     -------
@@ -39,37 +36,23 @@ def roundMatlab(x, round_Matlab_needed=True):
         Rounded number.
     """
     
-    xround = int(x)
-    even = xround/2 == int(xround/2) # True if multiple of 2
+    isRoundMatlabNeeded = round(80.5) == 81
     
-    if even:
-        y = round(x) + 1
-    else:
-        y = round(x)
-    
-    if round_Matlab_needed:
-        return y
-    else:
-        return round(x)
-
-#%%
+    if isRoundMatlabNeeded:
         
-#def loadZeroPumpProbe(filename, autoclose=True):
-#    
-#    t, V, meanV, details = ivs.loadNicePumpProbe(filename)
-#    fig = ivp.plotPumpProbe(filename, autosave=False)
-#    ax = fig.axes[0]
-#    t0 = ivp.interactiveValueSelector(ax, y_value=False)
-#    t0 = t[np.argmin(abs(t-t0))]
-#    
-#    if autoclose:
-#        plt.close(fig)
-#
-#    V = V[t>=t0, :]
-#    meanV = meanV[t>=t0]
-#    t = t[t>=t0]
-#
-#    return t, V, meanV, details
+        xround = int(x)
+        even = xround/2 == int(xround/2) # True if multiple of 2
+        
+        if even:
+            y = round(x) + 1
+        else:
+            y = round(x)
+            
+        return y
+    
+    else:
+    
+        return round(x)
 
 #%%
 
@@ -169,7 +152,7 @@ Problems so far:
 
 #%%
 
-def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
+def linearPrediction(t, x, dt, autoclose=True):
     
     """Applies linear prediction fit to data.
     
@@ -227,7 +210,7 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     
     # Create data matrix
     N = len(x)
-    M = roundMatlab(0.75 * N, round_Matlab_needed)
+    M = roundMatlab(0.75 * N)
     X = np.array([x[i+j+1] for j in range(N-M) for i in range(M)]).reshape((N-M,M))
     
     # Diagonalize square data matrix
@@ -281,12 +264,10 @@ def linearPrediction(t, x, dt, autoclose=True, round_Matlab_needed=True):
     
     # Crop them according to number of real roots and rank of diagonalized matrix
     Nzeros = len(angular_frequencies) - np.count_nonzero(angular_frequencies)
-    angular_frequencies = abs(angular_frequencies)[:int(roundMatlab(
-            (rank-Nzeros)/2+Nzeros,
-            round_Matlab_needed))]
-    damping_constants = damping_constants[:int(roundMatlab(
-            (rank-Nzeros)/2+Nzeros,
-            round_Matlab_needed))]
+    angular_frequencies = abs(angular_frequencies)[:roundMatlab(
+            (rank-Nzeros)/2+Nzeros)]
+    damping_constants = damping_constants[:roundMatlab(
+            (rank-Nzeros)/2+Nzeros)]
     
     # Then crop them according to the number of positive or zero damping constants
     Npositives = len(damping_constants[damping_constants>=0])

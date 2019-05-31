@@ -15,8 +15,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190527_08'
-path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-27'
+name = 'M_20190506_14'
+path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-06'
 
 # Plot parameters
 plot_params = dict(
@@ -29,7 +29,6 @@ plot_params = ivu.InstancesDict(plot_params)
 
 # Fit parameters
 fit_params = dict(
-        round_Matlab_needed = True, # Pyhon 3.6.2 needs it
         use_full_mean = True,
         use_experiments = [0], # First is 0, not 1!
         send_tail_to_zero = False,
@@ -93,8 +92,7 @@ del V0
 # Use linear prediction
 results, other_results, plot_results = iva.linearPrediction(
     t, data, details['dt'], 
-    autoclose=plot_params.autoclose,
-    round_Matlab_needed=fit_params.round_Matlab_needed)
+    autoclose=plot_params.autoclose)
 
 # Plot linear prediction
 ivp.linearPredictionPlot(filename, plot_results, autosave=plot_params.autosave)
