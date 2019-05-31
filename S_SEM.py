@@ -5,11 +5,11 @@ Created on Sat May 25 09:09:38 2019
 @author: Vall
 """
 
-import iv_analysis_module as iva
+import iv_utilities_module as ivu
 import numpy as np
 import os
 
-path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\SEM\M135\M135 geometrias\5'
+path = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7\SEM\M135\M135 Geometrías\5'
 series = 'M135_5_1D'
 
 names = []
@@ -26,8 +26,8 @@ for file in os.listdir(path):
         height.append(np.loadtxt(os.path.join(path, file), 
                                  delimiter=',', 
                                  skiprows=1)[:,-1])
-height = np.array(height)
-width = np.array(width)
+height = np.array(height).T
+width = np.array(width).T
 del file
 
 W = np.mean(width, axis=0)
@@ -51,4 +51,4 @@ items = ['\t'.join([n, r]) for n, r in zip(names, items)]
 items = '\n'.join(items)
 heading = '\t'.join(['Nro', heading])
 table = '\n'.join([heading, items])
-iva.copy(table)
+ivu.copy(table)
