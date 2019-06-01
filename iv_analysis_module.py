@@ -8,51 +8,9 @@ Created on Wed Apr 17 14:28:53 2019
 import iv_plot_module as ivp
 import iv_utilities_module as ivu
 import matplotlib.pyplot as plt
+import matplotlib.widgets as wid
 from numpy import pi
 import numpy as np
-
-#%%
-
-def roundMatlab(x):
-    
-    """Returns round value in Matlab 2014's style.
-    
-    In Pyhon 3.7.3...
-    >> round(80.5) = 80
-    >> round(81.5) = 82
-    
-    But in Matlab 2014...
-    >> round(80.5) = 81
-    >> round(81.5) = 82
-    
-    Parameters
-    ----------
-    x : float
-        Number to be rounded.
-    
-    Returns
-    -------
-    y : int
-        Rounded number.
-    """
-    
-    isRoundMatlabNeeded = round(80.5) == 81
-    
-    if isRoundMatlabNeeded:
-        
-        xround = int(x)
-        even = xround/2 == int(xround/2) # True if multiple of 2
-        
-        if even:
-            y = round(x) + 1
-        else:
-            y = round(x)
-            
-        return int(y)
-    
-    else:
-    
-        return int(round(x))
 
 #%%
 
@@ -108,51 +66,52 @@ def cropData(t0, t, *args, **kwargs):
     
     return new_args
 
-#%% PMUSIC -----------------------------------------------------------------
+#%%
 
-## Start by defining general parameters
-#PMN = nsize//4 # WHY /4? "cantidad de mediciones"
-#PMT = 1200 # size of the window in ps
-#PMdt = 20 # time step in ps
-#
-## Now get PMUSIC's parameters3
-#PMdata = detrend(meanV) # BEWARE! THE BEST FIT HORIZONTAL LINE IS FILTERED!
-#Mp = [PMN, 200] # This is PMUSIC's most important parameter
-## Mp = [components' dimension, harmonics' limit]
-## Second variable marks how many harmonics to throw away.
-## It can't be greater than the measurement's dimension.
-#
-## Then define several variables to be filled
-#MSn = []
-#Mfn = []
-#iPMindex=0
-#for i in range(PMT+1, 1350, PMdt): # WHY? SHOULD I BE INCLUDING 1350? I'M NOT.
-#
-#    iPMindex = iPMindex + 1
-#
-#    # Take a segment of data and apply PMUSIC
-#    iPMdata = PMdata[((i-PMT) < t) & (t < i)]
-#    [MSn1, Mfn1] = pmusic(iPMdata, Mp, 6000, samplerate, [], 0)
-#    # WHY 6000?
-#        
-#    iPMselection = ((Mfn1 >= 0) & (Mfn1 <= 0.06));
-#    MSn[:, iPMindex] = MSn1[iPMselection]
-#    Mfn[:, iPMindex] = Mfn1[iPMselection]
-#
-## Finally... Plot! :)
-#plt.figure(1)
-#plt.subplot(3,2,1)
-#plt.imagesc(np.arange(1,T), Mfn[:,1], MSn)
-
-"""
-Problems so far:
-    Don't have a pmusic Python equivalent
-    Haven't searched an imagesc equivalent
-"""
+def roundMatlab(x):
+    
+    """Returns round value in Matlab 2014's style.
+    
+    In Pyhon 3.7.3...
+    >> round(80.5) = 80
+    >> round(81.5) = 82
+    
+    But in Matlab 2014...
+    >> round(80.5) = 81
+    >> round(81.5) = 82
+    
+    Parameters
+    ----------
+    x : float
+        Number to be rounded.
+    
+    Returns
+    -------
+    y : int
+        Rounded number.
+    """
+    
+    isRoundMatlabNeeded = round(80.5) == 81
+    
+    if isRoundMatlabNeeded:
+        
+        xround = int(x)
+        even = xround/2 == int(xround/2) # True if multiple of 2
+        
+        if even:
+            y = round(x) + 1
+        else:
+            y = round(x)
+            
+        return int(y)
+    
+    else:
+    
+        return int(round(x))
 
 #%%
 
-def linearPrediction(t, x, dt, autoclose=True):
+def linearPrediction(t, x, autoclose=True):
     
     """Applies linear prediction fit to data.
     
@@ -163,18 +122,15 @@ def linearPrediction(t, x, dt, autoclose=True):
     
     This method does not need initial values for the parameters to fit.
     
-    In order for it to work, it is necesary though to have a uniform 
-    independent variable whose elements are multiples :math:`t_i=i.dt` of a 
-    constant step :math:`dt`
+    In order for it to work, this function creates a uniform independent variable 
+    whose elements are multiples :math:`t_i=i.dt` of a constant step :math:`dt`.
     
     Parameters
     ----------
     t : np.array
-        Independent variable :math:`t` in ps.
+        Independent variable :math:`t`.
     x : np.array
-        Dependent variable :math:`x` in any unit.
-    dt : float
-        Independent variable's step :math:`dt` in ps.
+        Dependent variable :math:`x`.
     autoclose=True : bool
         Says whether to close the intermediate eigenvalues' plot or not.
     
@@ -182,19 +138,16 @@ def linearPrediction(t, x, dt, autoclose=True):
     -------
     results : np.array
         Parameters that best fit the data. On its columns it holds...
-        ...frequency :math:`f=2\pi\omega` in Hz.
-        ...characteristic time :math:`\tau_i` in ps.
+        ...frequency :math:`f=2\pi\omega` in :math:`\frac{1}{t}` units.
+        ...characteristic time :math:`\tau_i` in :math:`t` units.
         ...quality factors :math:`Q_i=\frac{\omega}{2\gamma}=\pi f \tau`
         ...amplitudes :math:`A_i` in the same units as :math:`x`
-        ...phases :math:`\phi_i` written in multiples of :math:`\pi`
-    other_results : dict
+        ...phases :math:`\phi_i` written in radians in multiples of :math:`\pi`
+    parameters : ivu.InstancesDict
         Other fit parameters...
         ...chi squared :math:`\chi^2`
         ...number of significant values :math:`N`
-    plot_results : ivu.InstancesDict
-        Fit parameters that allow plotting. In particular, it holds...
-        ...'fit' which includes time, data, fit and fit terms.
-        ...'raman' which includes frequency, fit spectrum and fit terms spectra.
+        ...time range :math:`t_0,t_f`
     
     See also
     --------
@@ -202,12 +155,16 @@ def linearPrediction(t, x, dt, autoclose=True):
     
     """
     
-    #%% ---------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     # FREQUENCIES AND DAMPING FACTORS
     # -----------------------------------------------------------------------------
     
+    # Create uniform time
+    N = len(t)
+    dt = np.mean(np.diff(t))
+    t = np.arange(t[0], t[0] + N*dt, dt)
+    
     # Create data matrix
-    N = len(x)
     M = roundMatlab(0.75 * N)
     X = np.array([x[i+j+1] for j in range(N-M) for i in range(M)]).reshape((N-M,M))
     
@@ -227,9 +184,7 @@ def linearPrediction(t, x, dt, autoclose=True):
                  fillstyle='none', markersize=10)
     plt.title('¿Número de valores singulares?')
     plt.ylabel("Autovalores")
-    Nsignificant = ivp.interactiveIntegerSelector(ax, 
-                                                  min_value=0, 
-                                                  max_value=8)
+    Nsignificant = ivp.interactiveIntegerSelector(ax, min_value=0, max_value=8)
     if autoclose:
         plt.close(fig)
     
@@ -257,8 +212,8 @@ def linearPrediction(t, x, dt, autoclose=True):
     
     # Sort them
     ordered_index = angular_frequencies.argsort() # From smallest to largest freq
-    angular_frequencies = angular_frequencies[ordered_index]
-    damping_constants = damping_constants[ordered_index]
+    angular_frequencies = angular_frequencies[ordered_index] # in 2pi/dt units
+    damping_constants = damping_constants[ordered_index] # in 1/dt units
     
     # Crop them according to number of real roots and rank of diagonalized matrix
     Nzeros = len(angular_frequencies) - np.count_nonzero(angular_frequencies)
@@ -276,9 +231,9 @@ def linearPrediction(t, x, dt, autoclose=True):
     # Now I have the smallest frequencies and largest damping constants
     # Then I calculate the characteristic time tau and the quality factor Q
     quality_factors = angular_frequencies / (2*damping_constants)
-    characteristic_times = 1 / damping_constants # in ps
+    characteristic_times = 1 / damping_constants # in dt units
     
-    #%% ---------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     # AMPLITUDES AND PHASES
     # -----------------------------------------------------------------------------
     
@@ -331,7 +286,7 @@ def linearPrediction(t, x, dt, autoclose=True):
         else:
             amplitudes.append( np.sqrt(A2[2*i+1]**2 + A2[2*i]**2) )
             phases.append( np.arctan2(A2[2*i+1], A2[2*i]) )
-    frequencies = 1000 * angular_frequencies / (2*pi) # in GHz
+    frequencies = angular_frequencies / (2*pi) # in 1/dt units
     amplitudes = np.array(amplitudes)
     phases = np.array(phases)
     pi_phases = phases / pi # in radians written as multiples of pi
@@ -341,9 +296,9 @@ def linearPrediction(t, x, dt, autoclose=True):
         print("¡Listo! Encontramos {} términos".format(Nfit_terms))
     else:
         print("¡Listo! Encontramos {} término".format(Nfit_terms))
-    print("Frecuencias: {} GHz".format(frequencies))
+    print("Frecuencias: {}".format(frequencies))
     
-    #%% ---------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     # FIT AND RESULTS
     # -----------------------------------------------------------------------------
     
@@ -369,26 +324,32 @@ def linearPrediction(t, x, dt, autoclose=True):
                         amplitudes,
                         pi_phases]).T
 
-    # Some other results I need to plot
-    other_results = dict(chi_squared = chi_squared,
-                         Nsingular_values = Nsignificant)
+    # Some important parameters I would also like to return
+    parameters = dict(chi_squared = chi_squared,
+                      Nsingular_values = Nsignificant,
+                      t0 = t[0], tf = t[-1])
+    parameters = ivu.InstancesDict(parameters)
     
-    return results, other_results
+    return results, parameters
 
 #%%
 
-def ramanLikeSpectrum(results):
+def makeRamanLikeSpectrum(frequencies, characteristic_times, amplitudes):
     
-    """Makes a Raman-like spectrum for the linear prediction results"""
+    """Makes a Raman-like spectrum for one or more damped sinusoids"""
     
-    frequencies = results[:,0]
-    characteristic_times = results[:,1]
-    amplitudes = results[:,3]
-    Nfit_terms = len(frequencies)
+    # Raman-like Spectrum data organization
+    try:
+        Nfit_terms = len(frequencies)
+    except:
+        Nfit_terms = 1
+        frequencies = np.array([frequencies])
+        characteristic_times = np.array([characteristic_times])
+        amplitudes = np.array([amplitudes])
     
     # Raman-like Spectrum parameters
     max_frequency = max(frequencies)
-    frequencies_damping = 1000 / (2*pi*characteristic_times) # in GHz
+    frequencies_damping = 1 / (2*pi*characteristic_times)
     if max_frequency != 0:
         raman_frequencies = np.arange(0, 1.5*max_frequency, max_frequency/1000)
     else:
@@ -406,16 +367,180 @@ def ramanLikeSpectrum(results):
              2j * raman_frequencies * frequencies_damping[i]))
     raman_spectrum = np.sum(raman_spectrum_terms, axis=1)
 
-    raman = np.array([raman_frequencies, raman_spectrum,
-                      *list(raman_spectrum_terms.T)]).T
+#    raman = np.array([raman_frequencies, raman_spectrum,
+#                      *list(raman_spectrum_terms.T)]).T
     
-    return raman
+    return raman_frequencies, raman_spectrum, raman_spectrum_terms
+
+#%% PMUSIC -----------------------------------------------------------------
+
+## Start by defining general parameters
+#PMN = nsize//4 # WHY /4? "cantidad de mediciones"
+#PMT = 1200 # size of the window in ps
+#PMdt = 20 # time step in ps
+#
+## Now get PMUSIC's parameters3
+#PMdata = detrend(meanV) # BEWARE! THE BEST FIT HORIZONTAL LINE IS FILTERED!
+#Mp = [PMN, 200] # This is PMUSIC's most important parameter
+## Mp = [components' dimension, harmonics' limit]
+## Second variable marks how many harmonics to throw away.
+## It can't be greater than the measurement's dimension.
+#
+## Then define several variables to be filled
+#MSn = []
+#Mfn = []
+#iPMindex=0
+#for i in range(PMT+1, 1350, PMdt): # WHY? SHOULD I BE INCLUDING 1350? I'M NOT.
+#
+#    iPMindex = iPMindex + 1
+#
+#    # Take a segment of data and apply PMUSIC
+#    iPMdata = PMdata[((i-PMT) < t) & (t < i)]
+#    [MSn1, Mfn1] = pmusic(iPMdata, Mp, 6000, samplerate, [], 0)
+#    # WHY 6000?
+#        
+#    iPMselection = ((Mfn1 >= 0) & (Mfn1 <= 0.06));
+#    MSn[:, iPMindex] = MSn1[iPMselection]
+#    Mfn[:, iPMindex] = Mfn1[iPMselection]
+#
+## Finally... Plot! :)
+#plt.figure(1)
+#plt.subplot(3,2,1)
+#plt.imagesc(np.arange(1,T), Mfn[:,1], MSn)
+
+"""
+Problems so far:
+    Don't have a pmusic Python equivalent
+    Haven't searched an imagesc equivalent
+"""
+
+#%%
+    
+def linearPredictionPlot(t, x, results, showgrid=False):
+
+    """Plots the results of a linear prediction fit.
+    
+    Parameters
+    ----------
+    t : np.array
+        Independent variable :math:`t`.
+    x : np.array
+        Dependent variable :math:`x`.
+    results : np.array
+        Parameters that best fit the data. On its columns it holds...
+        ...frequency :math:`f=2\pi\omega` in :math:`\frac{1}{t}` units.
+        ...characteristic time :math:`\tau_i` in :math:`t` units.
+        ...quality factors :math:`Q_i=\frac{\omega}{2\gamma}=\pi f \tau`
+        ...amplitudes :math:`A_i` in the same units as :math:`x`
+        ...phases :math:`\phi_i` written in radians in multiples of :math:`\pi`
+    showgrid=False : bool
+        Says whether to show or not the vertical grid on the time space plot.
+    
+    Returns
+    -------
+    fig : plt.Figure instance
+        Figure containing the desired plot.
+    legend_buttons : wid.CheckButtons
+        Interactive legend. Only returned if making an interactive plot.
+    
+    See also
+    --------
+    iva.linearPrediction
+    
+    """
+    
+    # BIG PROBLEM! I NEED THE TIME!
+    
+    # First I deglose data
+    Nfit_terms = results.shape[0]
+    fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
+                         for a, b, q, omega, phi in results.T])
+    fit_total = sum(fit_terms.T)
+    fit = np.array([t, fit_total, *fit_terms]).T
+    raman = np.array(makeRamanLikeSpectrum).T
+    
+    # Then, to plot, I first start a figure
+    fig = plt.figure()
+    grid = plt.GridSpec(3, 5, hspace=0.1)
+    
+    # In the upper subplot, I put the Raman-like spectrum
+    ax_spectrum = plt.subplot(grid[0,:4])
+    plt.plot(raman[:,0], raman[:,1], linewidth=2)
+    lspectrum_terms = plt.plot(raman[:,0], raman[:,2:], 
+                               linewidth=2)
+    for l in lspectrum_terms: l.set_visible(False)
+    plt.xlabel("Frecuencia (GHz)")
+    plt.ylabel("Amplitud (u.a.)")
+    ax_spectrum.xaxis.tick_top()
+    ax_spectrum.xaxis.set_label_position('top')
+    
+    # In the lower subplot, I put the data and fit
+    ax_data = plt.subplot(grid[1:,:])
+    ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.4)
+    ax_data.autoscale(False)
+    lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
+    lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
+    for l in lfit_terms: l.set_visible(False)
+    plt.xlabel("Tiempo (ps)")
+    plt.ylabel(r"Voltaje ($\mu$V)")
+    ax_data.tick_params(labelsize=12)
+    if showgrid:
+        ax_data.minorticks_on()
+        ax_data.tick_params(axis='y', which='minor', left=False)
+        ax_data.tick_params(length=5)
+        ax_data.grid(axis='x', which='both')
+        ldata.set_linewidth(0.6)
+        lfit.set_linewidth(2.3)
+    
+    # Because it's pretty, I make an interactive legend
+    ax_legend = plt.axes([0.75, 0.642, 0.155, 0.24])
+    legend_buttons = wid.CheckButtons(ax_legend, ('Data', 
+                                     'Ajuste', 
+                                     *['Término {:.0f}'.format(i+1) 
+                                     for i in range(Nfit_terms)]), 
+                        (True, True, *[False for i in range(Nfit_terms)]))
+    legend_buttons.labels[1].set_color(lfit.get_color())
+    for leg, l in zip(legend_buttons.labels[2:], lfit_terms):
+        leg.set_color(l.get_color())
+    
+    # For that, I'll need a callback function  
+    def legend_callback(label):
+        if label == 'Data':
+            ldata.set_visible(not ldata.get_visible())
+        elif label == 'Ajuste':
+            lfit.set_visible(not lfit.get_visible())
+        else:
+            for i in range(Nfit_terms):
+                if label == 'Término {:.0f}'.format(i+1):
+                    lfit_terms[i].set_visible(not lfit_terms[i].get_visible())
+                    lspectrum_terms[i].set_visible(
+                            not lspectrum_terms[i].get_visible())
+        plt.draw()
+    legend_buttons.on_clicked(legend_callback)
+    
+#    # Since I can, I would also like an interactive 'Save' button
+#    save_button = ivp.interactiveSaveButton(filename, sufix='_fit')
+#    
+#    # Once I have all that, I'll show the plot
+#    plt.show()
+#    
+#    # Like it is shown for the first time, autosave if configured that way
+#    if autosave:
+#        newpath = os.path.join(path, 'Figuras')
+#        if not os.path.isdir(newpath):
+#            os.makedirs(newpath)
+#        save_button.ax.set_visible(False)
+#        plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
+#        save_button.ax.set_visible(True)
+        
+    return fig, legend_buttons
 
 #%%
 
-def linearPredictionTables(parameters, results, other_results):
+def linearPredictionTables(parameters, results, other_results, units=["Hz","s"]):
 
-    terms_heading = ["F (GHz)", "\u03C4 (ps)", "Q", "A (u.a.)", "Fase (\u03C0rad)"]
+    terms_heading = ["F ({})".format(units[0]), "\u03C4 ({})".format(units[1]), 
+                     "Q", "A (u.a.)", "Fase (\u03C0rad)"]
     terms_heading = '\t'.join(terms_heading)
     terms_table = ['\t'.join([str(element) for element in row]) for row in results]
     terms_table = '\n'.join(terms_table)
@@ -467,19 +592,19 @@ def linearPredictionTables(parameters, results, other_results):
 
 #%%
 
-def arrayTable(array, heading_list=None, axis=0):
-    
-    if heading_list is not None:
-        heading = '\t'.join(heading_list)
-    if axis==1:
-        array = array.T
-    elif axis!=0:
-        raise ValueError("Axis must be 0 or 1!")
-    items = ['\t'.join([str(element) for element in row]) for row in array]
-    items = '\n'.join(items)
-    if heading_list is not None:
-        table = '\n'.join([heading, items])
-    else:
-        table = items
-    
-    return table
+#def arrayTable(array, heading_list=None, axis=0):
+#    
+#    if heading_list is not None:
+#        heading = '\t'.join(heading_list)
+#    if axis==1:
+#        array = array.T
+#    elif axis!=0:
+#        raise ValueError("Axis must be 0 or 1!")
+#    items = ['\t'.join([str(element) for element in row]) for row in array]
+#    items = '\n'.join(items)
+#    if heading_list is not None:
+#        table = '\n'.join([heading, items])
+#    else:
+#        table = items
+#    
+#    return table
