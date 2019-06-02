@@ -166,10 +166,3 @@ class InstancesDict:
     def update(self, dic):
         
         self.__dict__.update(dic)
-    
-    def is_empty(self, key):
-        
-        if key in self.__dict__.keys():
-            return False
-        else:
-            return True

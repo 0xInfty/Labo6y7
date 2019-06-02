@@ -111,7 +111,7 @@ def roundMatlab(x):
 
 #%%
 
-def linearPrediction(t, x, autoclose=True):
+def linearPrediction(t, x, dt=None, autoclose=True):
     
     """Applies linear prediction fit to data.
     
@@ -131,6 +131,8 @@ def linearPrediction(t, x, autoclose=True):
         Independent variable :math:`t`.
     x : np.array
         Dependent variable :math:`x`.
+    dt=None : np.array
+        Independent variable step :math:`dt`. Optional.
     autoclose=True : bool
         Says whether to close the intermediate eigenvalues' plot or not.
     
@@ -161,8 +163,10 @@ def linearPrediction(t, x, autoclose=True):
     
     # Create uniform time
     N = len(t)
-    dt = np.mean(np.diff(t))
-    t = np.arange(t[0], t[0] + N*dt, dt)
+    if dt is None:
+        dt = np.mean(np.diff(t))
+    if not all(dt*np.ones(N-1) == np.diff(t)):
+        t = np.arange(t[0], t[0] + N*dt, dt)
     
     # Create data matrix
     M = roundMatlab(0.75 * N)
@@ -290,6 +294,7 @@ def linearPrediction(t, x, autoclose=True):
     amplitudes = np.array(amplitudes)
     phases = np.array(phases)
     pi_phases = phases / pi # in radians written as multiples of pi
+    
     if Nfit_terms==0:
         raise ValueError("¡Error! No se encontraron términos de ajuste")
     elif Nfit_terms>1:
@@ -310,12 +315,6 @@ def linearPrediction(t, x, autoclose=True):
     fit = sum(fit_terms.T)
     chi_squared = sum( (fit - x)**2 ) / N # Best if absolute is smaller
     print("Chi cuadrado \u03C7\u00B2: {:.2e}".format(chi_squared))
-                     
-    ## Statistics of the residue
-    #residue = x - fit
-    #residue_transform = abs(np.fft.rfft(residue))
-    #residue_frequencies = 1000 * np.fft.rfftfreq(N, d=dt) # in GHz
-    #plt.plot(residue_frequencies, residue_transform)
     
     # What I would like this function to return
     results = np.array([frequencies,
@@ -534,77 +533,3 @@ def linearPredictionPlot(t, x, results, showgrid=False):
 #        save_button.ax.set_visible(True)
         
     return fig, legend_buttons
-
-#%%
-
-def linearPredictionTables(parameters, results, other_results, units=["Hz","s"]):
-
-    terms_heading = ["F ({})".format(units[0]), "\u03C4 ({})".format(units[1]), 
-                     "Q", "A (u.a.)", "Fase (\u03C0rad)"]
-    terms_heading = '\t'.join(terms_heading)
-    terms_table = ['\t'.join([str(element) for element in row]) for row in results]
-    terms_table = '\n'.join(terms_table)
-    terms_table = '\n'.join([terms_heading, terms_table])
-    
-    fit_heading = ["Experimentos utilizados",
-                   "Número de valores singulares",
-                   "Porcentaje enviado a cero (%)",
-                   "Método de corrimiento",
-                   "Corrimiento V\u2080 (\u03BCV)",               
-                   r"Rango temporal → Inicio (ps)",
-                   r"Rango temporal → Final (ps)",
-                   "Chi cuadrado \u03C7\u00B2"]
-    
-    if parameters.use_full_mean:
-        used_experiments = 'Todos'
-    else:
-        used_experiments = ', '.join([str('{:.0f}'.format(i+1)) 
-                                      for i in parameters.use_experiments])
-        if len(parameters.use_experiments)==1:
-            used_experiments = 'Sólo ' + used_experiments
-        else:
-            used_experiments = 'Sólo ' + used_experiments
-    if parameters.send_tail_to_zero:
-        tail_percent = parameters.use_fraction*100
-    else:
-        tail_percent = 0
-    if parameters.tail_method=='mean':
-        method = 'Promedio'
-    elif parameters.tail_method=='min':
-        method = 'Mínimo'
-    elif parameters.tail_method=='max':
-        method = 'Máximo'
-    else:
-        method = 'Desconocido'
-    
-    fit = [used_experiments,
-           str(other_results['Nsingular_values']),
-           '{:.0f}'.format(tail_percent),
-           method,
-           str(parameters.voltage_zero),
-           str(parameters.time_range[0]),
-           str(parameters.time_range[1]),
-           '{:.2e}'.format(other_results['chi_squared'])]
-    fit_table = ['\t'.join([h, f]) for h, f in zip(fit_heading, fit)]
-    fit_table = '\n'.join(fit_table)
-    
-    return terms_table, fit_table
-
-#%%
-
-#def arrayTable(array, heading_list=None, axis=0):
-#    
-#    if heading_list is not None:
-#        heading = '\t'.join(heading_list)
-#    if axis==1:
-#        array = array.T
-#    elif axis!=0:
-#        raise ValueError("Axis must be 0 or 1!")
-#    items = ['\t'.join([str(element) for element in row]) for row in array]
-#    items = '\n'.join(items)
-#    if heading_list is not None:
-#        table = '\n'.join([heading, items])
-#    else:
-#        table = items
-#    
-#    return table

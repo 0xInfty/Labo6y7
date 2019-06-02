@@ -300,40 +300,6 @@ def interactiveIntegerSelector(ax, min_value=0, max_value=5):
     return integer
 
 #%%
- 
-def interactiveTimeSelector(filename, autoclose=True):
-    
-    """Allows to select a particular time instant on a Pump Probe file.
-    
-    Parameters
-    ----------
-    filename : str
-        Filename, which must include full path and extension.
-    autoclose=True : bool
-        Says whether to automatically close this picture or not.
-    
-    Returns
-    -------
-    ti : float
-        Selected value.
-    
-    See also
-    --------
-    ivs.loadNicePumpProbe
-    """
-    
-    t, V, details = loadNicePumpProbe(filename)
-    fig = plotPumpProbe(filename, autosave=False)
-    ax = fig.axes[0]
-    ti = interactiveValueSelector(ax, y_value=False)
-    ti = t[np.argmin(abs(t-ti))]
-    
-    if autoclose:
-        plt.close(fig)
-
-    return ti
-
-#%%
 
 class FillingCursor(wid.Cursor):
     
