@@ -2,10 +2,13 @@
 """
 Created on Sat Jun  1 18:00:29 2019
 
-@author: Usuario
+@author: Vall
 """
 
+import iv_save_module as ivs
 import iv_plot_module as ivp
+import iv_analysis_module as iva
+import iv_utilities_module as ivu
 import matplotlib.pyplot as plt
 #import matplotlib.widgets as wid
 import numpy as np
@@ -323,3 +326,203 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     
     if not autoclose:
         return figures
+
+#%%
+        
+class FitConfigPumpProbe(ivu.InstancesDict):
+    
+    def __init__(self, **kwargs):
+        
+        default_properties = dict(
+                use_full_mean = True,
+                use_experiments = [0], # First is 0, not 1!
+                send_tail_to_zero = False,
+                send_tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
+                send_tail_fraction = .2,
+                choose_t0 = True,
+                choose_tf = False,
+                choose_V0 = False,
+                )
+        
+        dic = {}
+        for k, v in default_properties.items():
+            try:
+                dic[k] = kwargs[k]
+            except:
+                dic.update({k: v})
+        
+        super().__init__(dic)
+
+#%%
+                
+class FitParamsPumpProbe(ivu.InstancesDict):
+    
+    def __init__(self, **kwargs):
+        
+        default_properties = dict(
+                t0 = None,
+                tf = None,
+                V0 = None
+                )
+        
+        dic = {}
+        for k, v in default_properties.items():
+            try:
+                dic[k] = kwargs[k]
+            except:
+                dic.update({k: v})
+        
+        super().__init__(dic)
+
+#%%
+
+def linearPredictionPumpProbe(filename, autosave=True, autoclose=True, **kwargs):
+    
+    # Load data
+    t, V, details = ivs.loadNicePumpProbe(filename) # t in ps, V in uV
+    
+    # Set configuration
+    fit_config = FitConfigPumpProbe(**kwargs)
+    fit_params = FitParamsPumpProbe(**kwargs)
+    
+    # Choose specific data to fit
+    if fit_params.use_full_mean:
+        V = np.mean(V, axis=1)
+    else:
+        V = np.mean(V[:, fit_params.use_experiments], axis=1)
+
+    # Choose initial time t0
+    if fit_config.choose_t0 and fit_params.t0 is None:
+        fit_params.t0 = ivp.interactiveTimeSelector(filename, 
+                                                    autoclose=autoclose)
+    elif fit_params.t0 is None:
+        fit_params.t0 = t[0]
+    
+    # Choose final time tf
+    if fit_config.choose_tf and fit_params.tf is None:
+        fit_params.tf = ivp.interactiveTimeSelector(filename, 
+                                                    autoclose=autoclose)
+    elif fit_params.tf is None:
+        fit_params.tf = t[-1]
+    
+    # Crop data for the chosen time interval
+    t, V = iva.cropData(fit_params.t0, t, V)
+    t, V = iva.cropData(fit_params.tf, t, V, logic='<=')
+    
+    # If needed, make a vertical shift
+    if fit_config.send_tail_to_zero and fit_config.choose_V0:
+        print("¡Ojo! Corrimiento vertical automático")
+        fit_config.choose_V0 = False
+    if fit_config.send_tail_to_zero and fit_params.V0 is None:
+        function = eval('np.{}'.format(fit_config.send_tail_method))
+        fit_params.V0 = function(V[int( (1-fit_config.send_tail_fraction) * len(V)):])
+        del function
+    elif fit_params.V0 is None:
+        fit_params.V0 = 0
+    V = V - fit_params.V0
+    
+    # Use linear prediction
+    results, parameters = iva.linearPrediction(t, V, dt=details['dt'], 
+                                               autoclose=autoclose)
+    results[:,0] = results[:,0] / 1000 # t is ps, so f was THz but now is GHz
+    
+#    if autosave:
+#        ivs.linearPredictionSave(filename, results, other_results, fit_params)
+#    
+#    # Plot linear prediction
+#    ivp.linearPredictionPlot(filename, plot_results, autosave=autosave)
+#    
+#    # Generate fit tables
+#    tables = iva.linearPredictionTables(fit_params, results, other_results)
+#    ivu.copy(tables[0]) 
+
+#%%
+ 
+def interactiveTimeSelector(filename, autoclose=True):
+    
+    """Allows to select a particular time instant on a Pump Probe file.
+    
+    Parameters
+    ----------
+    filename : str
+        Filename, which must include full path and extension.
+    autoclose=True : bool
+        Says whether to automatically close this picture or not.
+    
+    Returns
+    -------
+    ti : float
+        Selected value.
+    
+    See also
+    --------
+    ivs.loadNicePumpProbe
+    
+    """
+    
+    t, V, details = loadNicePumpProbe(filename)
+    fig = plotPumpProbe(filename, autosave=False)
+    ax = fig.axes[0]
+    ti = ivp.interactiveValueSelector(ax, y_value=False)
+    ti = t[np.argmin(abs(t-ti))]
+    
+    if autoclose:
+        plt.close(fig)
+
+    return ti
+   
+#%%
+"""
+def linearPredictionPumpProbeTables(results, other_results, units=["Hz","s"]):
+
+    terms_heading = ["F ({})".format(units[0]), "\u03C4 ({})".format(units[1]), 
+                     "Q", "A (u.a.)", "Fase (\u03C0rad)"]
+    terms_heading = '\t'.join(terms_heading)
+    terms_table = ['\t'.join([str(element) for element in row]) for row in results]
+    terms_table = '\n'.join(terms_table)
+    terms_table = '\n'.join([terms_heading, terms_table])
+    
+    fit_heading = ["Experimentos utilizados",
+                   "Número de valores singulares",
+                   "Porcentaje enviado a cero (%)",
+                   "Método de corrimiento",
+                   "Corrimiento V\u2080 (\u03BCV)",               
+                   r"Rango temporal → Inicio (ps)",
+                   r"Rango temporal → Final (ps)",
+                   "Chi cuadrado \u03C7\u00B2"]
+    
+    if parameters.use_full_mean:
+        used_experiments = 'Todos'
+    else:
+        used_experiments = ', '.join([str('{:.0f}'.format(i+1)) 
+                                      for i in parameters.use_experiments])
+        if len(parameters.use_experiments)==1:
+            used_experiments = 'Sólo ' + used_experiments
+        else:
+            used_experiments = 'Sólo ' + used_experiments
+    if parameters.send_tail_to_zero:
+        tail_percent = parameters.use_fraction*100
+    else:
+        tail_percent = 0
+    if parameters.tail_method=='mean':
+        method = 'Promedio'
+    elif parameters.tail_method=='min':
+        method = 'Mínimo'
+    elif parameters.tail_method=='max':
+        method = 'Máximo'
+    else:
+        method = 'Desconocido'
+    
+    fit = [used_experiments,
+           str(other_results['Nsingular_values']),
+           '{:.0f}'.format(tail_percent),
+           method,
+           str(parameters.voltage_zero),
+           str(parameters.time_range[0]),
+           str(parameters.time_range[1]),
+           '{:.2e}'.format(other_results['chi_squared'])]
+    fit_table = ['\t'.join([h, f]) for h, f in zip(fit_heading, fit)]
+    fit_table = '\n'.join(fit_table)
+    
+    return terms_table, fit_table
+"""
