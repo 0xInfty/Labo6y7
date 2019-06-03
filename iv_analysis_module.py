@@ -229,7 +229,7 @@ def linearPrediction(t, x, dt, autoclose=True):
     plt.ylabel("Autovalores")
     Nsignificant = ivp.interactiveIntegerSelector(ax, 
                                                   min_value=0, 
-                                                  max_value=8)
+                                                  max_value=20)
     if autoclose:
         plt.close(fig)
     
