@@ -97,13 +97,13 @@ def interactiveLegend(ax, labels=False, show_default=True,
         else:
             location = location + 'right'
     if location=='upper right':
-        position = [x0[1] + extra_x, y0[1] + extra_y, width, height]
+        position = [x0[1] - extra_x, y0[1] - extra_y, width, height]
     elif location=='upper left':
-        position = [x0[0] - extra_x, y0[1] + extra_y, width, height]
+        position = [x0[0] + extra_x, y0[1] - extra_y, width, height]
     elif location=='lower right':
-        position = [x0[0] + extra_x, y0[0] - extra_y, width, height]
+        position = [x0[1] - extra_x, y0[0] + extra_y, width, height]
     elif location=='lower left':
-        position = [x0[1] - extra_x, y0[0] - extra_y, width, height]
+        position = [x0[0] + extra_x, y0[0] + extra_y, width, height]
     else:
         raise ValueError("Unvalid legend location")
  
@@ -323,7 +323,7 @@ def interactiveTimeSelector(filename, autoclose=True):
     """
     
     t, V, details = loadNicePumpProbe(filename)
-    fig = plotPumpProbe(filename, autosave=False)
+    fig = plotPumpProbe(filename, autosave=False)[0]
     ax = fig.axes[0]
     ti = interactiveValueSelector(ax, y_value=False)
     ti = t[np.argmin(abs(t-ti))]
@@ -560,7 +560,7 @@ def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
     if interactive:
         return fig, legend_buttons, save_button
     else:
-        return fig
+        return fig, None, None
 
 #%%
 
@@ -603,7 +603,7 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     
     figures = []
     for f in files:
-        fig = plotPumpProbe(f, interactive=False, autosave=autosave)
+        fig = plotPumpProbe(f, interactive=False, autosave=autosave)[0]
         if autoclose:
             plt.close(fig)
         else:
