@@ -11,14 +11,16 @@ import numpy as np
 import os
 
 # Parameters
-path = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7\SEM\M135\M135 Geometrías\7B\2D'
-series = 'M135_7B_2D'
+path = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO1\LIGO1 Geometrías\1'
+series = 'LIGO1_1'
 
 # Load data
 rwidth = []
 rheight = []
 height = []
 width = []
+hangle = []
+wangle = []
 for file in os.listdir(path):
 #    print(file)
     if file.endswith("W.csv"):
@@ -26,19 +28,32 @@ for file in os.listdir(path):
         width.append(np.loadtxt(os.path.join(path, file), 
                                 delimiter=',', 
                                 skiprows=1)[:,-1])
+        wangle.append(np.loadtxt(os.path.join(path, file), 
+                                 delimiter=',', 
+                                 skiprows=1)[:,-2])
     elif file.endswith("H.csv"):
         rheight.append(file.split('_H.csv')[0].split('_')[-1])
         height.append(np.loadtxt(os.path.join(path, file), 
                                  delimiter=',', 
                                  skiprows=1)[:,-1])
+        hangle.append(np.loadtxt(os.path.join(path, file), 
+                                 delimiter=',', 
+                                 skiprows=1)[:,-2])
 
-# Organize data
+# Organize length data
 if rwidth!=rheight:
     raise ValueError("¡Falta algún dato!")
 rods = rwidth
 height = np.array(height).T
 width = np.array(width).T
 del file, rwidth, rheight
+
+# Organize angle data
+for ha, wa in hangle, wangle:
+    difference = np.mean(ha) - np.mean(wa)
+    standard = [90,-90]
+    if abs(difference-standard[0]) < abs(difference-standard[1]):
+        
 
 # Get results
 W = np.mean(width, axis=0)
