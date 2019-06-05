@@ -152,7 +152,7 @@ Problems so far:
 
 #%%
 
-def linearPrediction(t, x, dt, autoclose=True):
+def linearPrediction(t, x, dt, max_svalues=8, autoclose=True):
     
     """Applies linear prediction fit to data.
     
@@ -229,7 +229,7 @@ def linearPrediction(t, x, dt, autoclose=True):
     plt.ylabel("Autovalores")
     Nsignificant = ivp.interactiveIntegerSelector(ax, 
                                                   min_value=0, 
-                                                  max_value=20)
+                                                  max_value=max_svalues)
     if autoclose:
         plt.close(fig)
     

@@ -15,15 +15,16 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190508_05'
-path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Mediciones\2019-05-08'
+name = 'M_20190605_15'
+path = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Mediciones\2019-06-05'
 
 # Save parameters
 autosave = True
+overwrite = True
 
 # Plot parameters
 plot_params = dict(
-        plot = False,
+        plot = True,
         interactive = False,
         autoclose = True,
         )
@@ -32,12 +33,13 @@ plot_params = ivu.InstancesDict(plot_params)
 # Fit parameters
 fit_params = dict(
         use_full_mean = True,
-        use_experiments = [0], # First is 0, not 1!
-        send_tail_to_zero = False,
+        use_experiments = [1], # First is 0, not 1!
+        send_tail_to_zero = True,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
-        choose_tf = False
+        choose_tf = False,
+        max_svalues = 8,
         )
 fit_params = ivu.InstancesDict(fit_params)
 
@@ -48,9 +50,9 @@ filename = os.path.join(path, name+'.txt')
 
 # Plot
 if plot_params.plot:
-    ivp.plotPumpProbe(filename, 
-                      interactive=plot_params.interactive, 
-                      autosave=autosave)
+    fig, legb, savb = ivp.plotPumpProbe(filename, 
+                                        interactive=plot_params.interactive, 
+                                        autosave=autosave)
 
 # Several plots
 #ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
@@ -93,10 +95,12 @@ del V0
 
 # Use linear prediction
 results, other_results, plot_results = iva.linearPrediction(
-    t, data, details['dt'], 
+    t, data, details['dt'],
+    max_svalues=fit_params.max_svalues,
     autoclose=plot_params.autoclose)
 if autosave:
-    ivs.linearPredictionSave(filename, results, other_results, fit_params)
+    ivs.linearPredictionSave(filename, results, other_results, fit_params,
+                             overwrite=overwrite)
 
 # Plot linear prediction
 ivp.linearPredictionPlot(filename, plot_results, autosave=autosave)
