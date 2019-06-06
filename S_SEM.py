@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 # Parameters
-path = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO1\LIGO1 Geometrías\1'
+path = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO1\LIGO1 Geometrías\1'
 series = 'LIGO1_1'
 
 # Load data
@@ -49,11 +49,16 @@ width = np.array(width).T
 del file, rwidth, rheight
 
 # Organize angle data
-for ha, wa in hangle, wangle:
+new_wangle = []
+for ha, wa in zip(hangle, wangle):
     difference = np.mean(ha) - np.mean(wa)
-    standard = [90,-90]
-    if abs(difference-standard[0]) < abs(difference-standard[1]):
-        
+    print(difference)
+    if abs(difference-90) < abs(difference+90):
+        new_wangle.append(wa + 90)
+    else:
+        new_wangle.append(wa - 90)
+angle = np.array([[*ha, *wa] for ha, wa in zip(hangle, new_wangle)]).T
+del wangle, hangle, new_wangle
 
 # Get results
 W = np.mean(width, axis=0)
