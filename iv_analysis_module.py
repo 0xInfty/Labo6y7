@@ -413,9 +413,11 @@ Problems so far:
     Haven't searched an imagesc equivalent
 """
 
-#%%
-    
-def linearPredictionPlot(t, x, results, showgrid=False):
+#%%    
+def linearPredictionPlot(t, x, results, 
+                         xlabel='Variable independiente',
+                         ylabel='Variable dependiente',
+                         showgrid=False):
 
     """Plots the results of a linear prediction fit.
     
@@ -455,7 +457,7 @@ def linearPredictionPlot(t, x, results, showgrid=False):
     fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
                          for a, b, q, omega, phi in results.T])
     fit_total = sum(fit_terms.T)
-    fit = np.array([t, fit_total, *fit_terms]).T
+    fit = np.array([t, x, fit_total, *fit_terms]).T
     raman = np.array(makeRamanLikeSpectrum).T
     
     # Then, to plot, I first start a figure
@@ -480,8 +482,8 @@ def linearPredictionPlot(t, x, results, showgrid=False):
     lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
     lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
     for l in lfit_terms: l.set_visible(False)
-    plt.xlabel("Tiempo (ps)")
-    plt.ylabel(r"Voltaje ($\mu$V)")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     ax_data.tick_params(labelsize=12)
     if showgrid:
         ax_data.minorticks_on()
