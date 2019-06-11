@@ -206,8 +206,8 @@ def errorValue(X, dX, error_digits=2, units='',
     
     Returns
     -------
-    string : str
-        Latex string containing value and error.
+    string : list
+        List of strings containing value and error.
     
     Examples
     --------
@@ -309,100 +309,98 @@ def errorValue(X, dX, error_digits=2, units='',
     
     return string
 
-"""
->>> errorValue(.133432, .00332, string_scale=False, units='V', unpack=True)
-[]
-"""
-
 #%%
 
-#def errorValueLatex(X, dX, error_digits=2, units='',
-#                    string_scale=True, one_point_scale=False, 
-#                    legend=False, unpack=False):
-#    
-#    """Rounds up value and error of a measure. Also makes a latex string.
-#    
-#    This function takes a measure and its error as input. Then, it 
-#    rounds up both of them in order to share the same amount of decimal 
-#    places.
-#    
-#    After that, it generates a latex string containing the rounded up 
-#    measure. For that, it can rewrite both value and error so that the 
-#    classical prefix scale of units can be applied.
-#    
-#    Parameters
-#    ----------
-#    X : float
-#        Measurement's value.
-#    dX : float
-#        Measurement's associated error.
-#    error_digits=2 : int, optional.
-#        Desired number of error digits.
-#    units='' : str, optional.
-#        Measurement's units.
-#    string_scale=True : bool, optional.
-#        Whether to apply the classical prefix scale or not.        
-#    one_point_scale=False : bool, optional.
-#        Applies prefix with one order less.
-#    legend=False : bool, optional.
-#        Says whether it is for the legend of a plot or not.
-#    
-#    Returns
-#    -------
-#    latex_str : str
-#        Latex string containing value and error.
-#    
-#    Examples
-#    --------
-#    >> errorValue(1.325412, 0.2343413)
-#    '(1.33$\\pm$0.23)'
-#    >> errorValue(1.325412, 0.2343413, error_digits=3)
-#    '(1.325$\\pm$0.234)'
-#    >> errorValue(.133432, .00332, units='V')
-#    '\\mbox{(133.4$\\pm$3.3) mV}'
-#    >> errorValue(.133432, .00332, one_point_scale=True, units='V')
-#    '\\mbox{(0.1334$\\pm$0.0033) V}'
-#    >> errorValue(.133432, .00332, string_scale=False, units='V')
-#    '\\mbox{(1.334$\\pm$0.033)$10^{-1}$ V}'
-#    
-#    See Also
-#    --------
-#    copy
-#    
-#    """
-#
-#    # Forth, I make a latex string. Ex.: '(1.34$pm$0.32) kV'
-#    if not unpack:
-#        latex_str = r'({}$\pm${})'.format(measure_value, error_value)
-#        if not used_string_scale and measure_order != 0:
-#            latex_str = latex_str + r'$10^{' + '{:.0f}'.format(scale) + '}$'     
-#        elif used_string_scale and prefix!='':
-#            latex_str = latex_str + ' ' + prefix
-#        if prefix!='':
-#            latex_str = latex_str + units
-#        else:
-#            latex_str = latex_str + ' ' + units
-#        if units != '' or prefix:
-#            if not legend:
-#                latex_str = r'\mbox{' + latex_str + '}'
-#        if latex_str[-1]==' ':
-#            latex_str = latex_str[:len(latex_str)-1]
-#                
-#    else:
-#        latex_str = [r'{}'.format(measure_value), r'{}'.format(error_value)]
-#        if not used_string_scale and measure_order != 0:
-#            latex_str = [st + r'$10^{' + '{:.0f}'.format(scale) + '}$' 
-#                         for st in latex_str]
-#        elif used_string_scale and prefix!='':
-#            latex_str = [st + ' ' + prefix for st in latex_str]
-#        if prefix!='':
-#            latex_str = [st + units for st in latex_str]
-#        else:
-#            latex_str = [st + ' ' + units for st in latex_str]
-#        aux = []
-#        for st in latex_str:
-#            if st[-1]==' ':
-#                aux.append(st[:len(st)-1])
-#        latex_str = aux
-#    
-#    return latex_str
+def errorValueLatex(X, dX, error_digits=2, units='',
+                    string_scale=True, one_point_scale=False, mbox=False):
+    
+    """Rounds up value and error of a measure. Also makes a latex string.
+    
+    This function takes a measure and its error as input. Then, it 
+    rounds up both of them in order to share the same amount of decimal 
+    places.
+    
+    After that, it generates a latex string containing the rounded up 
+    measure. For that, it can rewrite both value and error so that the 
+    classical prefix scale of units can be applied.
+    
+    Parameters
+    ----------
+    X : float
+        Measurement's value.
+    dX : float
+        Measurement's associated error.
+    error_digits=2 : int, optional.
+        Desired number of error digits.
+    units='' : str, optional.
+        Measurement's units.
+    string_scale=True : bool, optional.
+        Whether to apply the classical prefix scale or not.        
+    one_point_scale=False : bool, optional.
+        Applies prefix with one order less.
+    mbox=False : bool, optional.
+        Says whether to wrap on a latex 'mbox' or not.
+    
+    Returns
+    -------
+    latex_string : str
+        Latex string containing value and error.
+    
+    Examples
+    --------
+    >> errorValueLatex(1.325412, 0.2343413)
+    '(1.33$\\pm$0.23)'
+    >> errorValueLatex(1.325412, 0.2343413, error_digits=3)
+    '(1.325$\\pm$0.234)'
+    >> errorValueLatex(.133432, .00332, units='V')
+    '(133.4$\\pm$3.3) mV'
+    >> errorValueLatex(.133432, .00332, one_point_scale=True, units='V')
+    '(0.1334$\\pm$0.0033) V'
+    >> errorValueLatex(.133432, .00332, string_scale=False, units='V')
+    '(1.334$\\pm$0.033)$10^{-1}$ V'
+    
+    See Also
+    --------
+    copy
+    errorValue
+    
+    """
+
+    string = errorValue(X, dX, error_digits, units,
+                        string_scale, one_point_scale)
+
+    try:
+        measure = string[0].split(' ')[0].split("E")[0]
+        error = string[1].split(' ')[0].split("E")[0]            
+    except:
+        measure = string[0].split("E")[0]
+        error = string[1].split("E")[0]
+        
+    string_format = string[0].split(measure)[1].split(' ')
+
+    if len(string_format)==2:
+        if string_format[0]!='':
+            order = findNumbers(string_format[0])[0]
+        else:
+            order = 0
+        unit = ' ' + string_format[1]
+    elif string_format[0]=='':
+        order = 0
+        unit = ''
+    elif units!='':
+        order = 0
+        unit = ' ' + string_format[0]
+    else:
+        order = findNumbers(string_format[0])[0]
+        unit = ''
+    
+    latex_string = r'({}$\pm${})'.format(measure, error)
+    if order!=0:
+        latex_string = latex_string + r'$10^{' + str(order) + r'}$' + unit
+    else:
+        latex_string = latex_string + unit
+
+    if mbox:
+        latex_string = r'\mbox{' + latex_string + '}'
+    
+    return latex_string
