@@ -11,7 +11,8 @@ import numpy as np
 import os
 
 # Parameters
-path = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO1\LIGO1 Geometrías\1'
+home = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7'
+path = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1')
 series = 'LIGO1_1'
 
 # Load data
@@ -114,15 +115,19 @@ W = np.mean(width, axis=0)
 dW = np.std(width, axis=0)
 H = np.mean(height, axis=0)
 dH = np.std(height, axis=0)
-A = W/H
-dA = W*dH/H**2 + dW/H
 a = np.mean(angle, axis=0)
 da = np.std(angle, axis=0)
+
+# Apply correction due to method
+H = H + dH
+W = W + dW
+A = W/H
+dA = W*dH/H**2 + dW/H
 
 # Organize results
 results = np.array([W,dW,H,dH,A,dA,a,da]).T
 heading = ["Ancho (nm)", "Error (nm)",
-           "Altura (nm)", "Error (nm)",
+           "Longitud (nm)", "Error (nm)",
            "Relación de aspecto", "Error",
            "Ángulo (°)", "Error (°)"]
 

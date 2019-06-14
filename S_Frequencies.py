@@ -9,13 +9,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import iv_save_module as ivs
+import iv_utilities_module as ivu
 
 # PARAMETERS ------------------------------------------------------------------
 
 # Main folder's path
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+home = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7'
 # Path to a list of filenames and rods to analize
-rods_filename = os.path.join(home, 'Análisis\Rods_LIGO1.txt')
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
+sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
 desired_frequency = 9.5 # in GHz
 
 # CODE ------------------------------------------------------------------------
@@ -91,15 +93,14 @@ ax1.tick_params(length=2)
 #for tick in ax1.axes.get_xticklabels():
 #tick.set_visible(False)
 ax1.grid(axis='x', which='both')
-ax1.tick_params(axis='x', labelrotation=-90)
+ax1.tick_params(axis='x', labelrotation=90)
 
-other_data, other_header, other_footer = ivs.loadTxt(r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
+other_data, other_header, other_footer = ivs.loadTxt(sem_filename)
 other_rods = other_footer['rods']
 new_data = []
 for r in rods:
     i = other_rods.index(r)
     new_data.append(other_data[i])
-    print(i)
 sem_data = np.array(new_data)
 
 #%% ANALYSIS WITH ANDREA ------------------------------------------------------
@@ -122,3 +123,32 @@ plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
 plt.loglog(length, theory, 'x')
 plt.loglog(length, theory_2, 'x')
+
+#%%
+
+items = []
+for i in range(len(rods)):
+    h = '\t'.join(ivu.errorValue(sem_data[i,2], sem_data[i,3]))
+    ra = '\t'.join(ivu.errorValue(sem_data[i,4], sem_data[i,5], one_point_scale=True))
+    items.append('\t'.join([h, ra, 
+                            "{:.2f}".format(fits_data[i,0]), 
+                             "{:.1f}".format(fits_data[i,2])]))
+del h, ra
+
+# Make OneNote table
+heading = '\t'.join(["Longitud (nm)", "Error (nm)", 
+                     "Relación de aspecto", "Error",
+                     "Frecuencia (GHz)", "Factor de calidad"])
+items = ['\t'.join([n, r]) for n, r in zip(rods, items)]
+items = '\n'.join(items)
+heading = '\t'.join(['Rod', heading])
+table = '\n'.join([heading, items])
+ivu.copy(table)
+del heading, items
+
+hole_data = np.array([*sem_data[:,:6], fits_data[:,0], fits_data[:,2]])
+ivs.saveTxt(hole_data, heading=["Ancho (nm)", "Error (nm)",
+                                "Longitud (nm)", "Error (nm)", 
+                                "Relación de aspecto", "Error",
+                                "Frecuencia (GHz)", "Factor de calidad"],
+            footer=dict(rods=rods))
