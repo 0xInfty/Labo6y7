@@ -312,7 +312,7 @@ def errorValue(X, dX, error_digits=2, units='',
 #%%
 
 def errorValueLatex(X, dX, error_digits=2, units='',
-                    string_scale=True, one_point_scale=False, mbox=False):
+                    string_scale=True, one_point_scale=False):
     
     """Rounds up value and error of a measure. Also makes a latex string.
     
@@ -338,8 +338,6 @@ def errorValueLatex(X, dX, error_digits=2, units='',
         Whether to apply the classical prefix scale or not.        
     one_point_scale=False : bool, optional.
         Applies prefix with one order less.
-    mbox=False : bool, optional.
-        Says whether to wrap on a latex 'mbox' or not.
     
     Returns
     -------
@@ -399,8 +397,5 @@ def errorValueLatex(X, dX, error_digits=2, units='',
         latex_string = latex_string + r'$10^{' + str(order) + r'}$' + unit
     else:
         latex_string = latex_string + unit
-
-    if mbox:
-        latex_string = r'\mbox{' + latex_string + '}'
     
     return latex_string
