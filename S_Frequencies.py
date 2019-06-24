@@ -200,7 +200,7 @@ print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit,
                                                         young_fit_error, 
                                                         units="Pa")))
 
-#%% 3) FREQUENCY AND ASPECT RELATION WITHOUT OUTLIERS
+#%% 5) FREQUENCY AND ASPECT RELATION WITHOUT OUTLIERS
 
 # Plot results 
 fig, ax1 = plt.subplots()
@@ -221,3 +221,15 @@ plt.show()
 
 # Format graph
 ax1.grid(axis='both')
+
+#%% 6) HISTOGRAM
+
+fig, ax = plt.subplots()
+
+bins_limits = ax.hist(sem_data[:,2])[1]
+plt.xlabel("Longitud (nm)")
+plt.ylabel("Repeticiones")
+
+#mean_frequencies = []
+#for Fi, Ff in zip(bins_limits[:-1], bins_limits[1:]):
+#    mean_frequencies = np.mean(fits_data[Fi<=fits_data[:,0]<Ff,0])
