@@ -15,7 +15,7 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\Luciana\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7'
 # Path to a list of filenames and rods to analize
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
@@ -153,7 +153,7 @@ plt.xlabel('Longitud (nm)')
 plt.loglog(length, theory, '-')
 plt.loglog(length, theory_2, '-')
 
-rsq, m, b = iva.linearFit(1/length, fits_data[:,0])
+rsq, m, b = iva.linearFit(1/length, fits_data[:,0], M = True)
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Inverso de longitud (1/nm)')
 young_fit = 4 * density * (m[0]**2)
@@ -222,7 +222,7 @@ plt.show()
 # Format graph
 ax1.grid(axis='both')
 
-#%% 6) HISTOGRAM
+#%% 6) HISTOGRAMS
 
 fig, ax = plt.subplots()
 
@@ -233,3 +233,35 @@ plt.ylabel("Repeticiones")
 #mean_frequencies = []
 #for Fi, Ff in zip(bins_limits[:-1], bins_limits[1:]):
 #    mean_frequencies = np.mean(fits_data[Fi<=fits_data[:,0]<Ff,0])
+
+fig, ax = plt.subplots()
+
+bins_limits = ax.hist(fits_data[:,0])[1]
+plt.xlabel("Frecuencia (GHz)")
+plt.ylabel("Repeticiones")
+
+#%% FREQUENCY AND LENGTH FORCED FIT TO SLOPE -1
+
+# Try to fit only the y-interccept, stating that the slope must be -1.
+def function(x, b):
+    return -x + b
+rsq_2, b_2 = iva.nonLinearFit(np.log(sem_data[:,2]), 
+                              np.log(fits_data[:,0]), 
+                              function)
+b_2 = b_2[0]
+young_fit_2 = density * (2 * np.exp(b_2[0]))**2
+young_fit_error_2 = 2 * density * b_2[1] * (2 * np.exp(b_2[0]))**2 
+print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit_2, 
+                                                        young_fit_error_2, 
+                                                        units="Pa")))
+
+#%% 8) BOX PLOTS
+
+plt.figure()
+plt.boxplot(fits_data[:,0])
+
+plt.figure()
+plt.boxplot(sem_data[:,4])
+
+plt.figure()
+plt.boxplot(sem_data[:,2])
