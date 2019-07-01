@@ -15,8 +15,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190605_15'
-path = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Mediciones\2019-06-05'
+name = 'M_20190605_11'
+path = os.getcwd()
 
 # Save parameters
 autosave = True
@@ -24,7 +24,7 @@ overwrite = True
 
 # Plot parameters
 plot_params = dict(
-        plot = True,
+        plot = False,
         interactive = False,
         autoclose = True,
         )
@@ -34,7 +34,7 @@ plot_params = ivu.InstancesDict(plot_params)
 fit_params = dict(
         use_full_mean = True,
         use_experiments = [1], # First is 0, not 1!
-        send_tail_to_zero = True,
+        send_tail_to_zero = False,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
@@ -108,3 +108,110 @@ ivp.linearPredictionPlot(filename, plot_results, autosave=autosave)
 # Generate fit tables
 tables = iva.linearPredictionTables(fit_params, results, other_results)
 ivu.copy(tables[0])
+
+#%% TRY OPTIMIZING!
+
+# Parameters
+name = 'M_20190605_11'
+path = os.getcwd()
+
+# Save parameters
+autosave = True
+overwrite = True
+
+# Plot parameters
+plot_params = dict(
+        plot = False,
+        interactive = False,
+        autoclose = True,
+        )
+plot_params = ivu.InstancesDict(plot_params)
+
+# Fit parameters
+fit_params = dict(
+        use_full_mean = True,
+        use_experiments = [1], # First is 0, not 1!
+        send_tail_to_zero = False,
+        tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
+        use_fraction = .2,
+        choose_t0 = True,
+        choose_tf = False,
+        max_svalues = 8,
+        )
+fit_params = ivu.InstancesDict(fit_params)
+
+# Create full filename
+filename = os.path.join(path, name+'.txt')
+
+# Load data
+t, V, details = ivs.loadNicePumpProbe(filename)
+
+# Choose data to fit
+if fit_params.use_full_mean:
+    data = np.mean(V, axis=1)
+else:
+    data = np.mean(V[:, fit_params.use_experiments], axis=1)
+
+# Choose time interval to eval
+t0 = -8.122954823529412
+i = np.argmin(np.abs(t-t0))
+Di = 40
+
+results = []
+other_results = []
+jgood = []
+for j in range(max(i-Di,0), i+Di):
+
+    # Choose initial time t0
+    t0j = t[j]
+    print(t0j, j)
+    
+    # Crop data accorddingly
+    tj, dataj = iva.cropData(t0j, t, data)
+    fit_params.time_range = (t0j, t[-1])
+    fit_params.voltage_zero = 0
+    
+    # Use linear prediction
+    try:
+        res, other, plot_results = iva.linearPrediction(tj, 
+                                                        dataj, 
+                                                        details['dt'], 
+                                                        svalues=4)
+        jgood.append(j)
+        results.append(res)
+        other_results.append(other)
+    except:
+        results.append(None)
+        other_results.append(None)
+        
+del res, other, plot_results
+
+jreallygood = []
+frequencies = []
+quality = []
+chi = []
+for j in jgood:
+    res = results[j]
+    other = other_results[j]
+    if res.shape[0]!=1:
+        imax = np.argmin(np.abs(res[:,0] - 9 * np.ones(len(res[:,0]))))
+        if res[imax,0] != 0:
+            frequencies.append(res[imax,0])
+            quality.append(res[imax,2])
+            chi.append(other['chi_squared'])
+            jreallygood.append(j)
+del res, other
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.plot(jreallygood, frequencies, 'x')
+plt.ylabel('Frecuencia (GHz)')
+
+plt.figure()
+plt.plot(jreallygood, quality, 'o')
+plt.ylabel('Factor de calidad')
+
+plt.figure()
+plt.plot(jreallygood, chi, '.')
+plt.ylabel('Chi cuadrado')
