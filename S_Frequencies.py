@@ -265,3 +265,25 @@ plt.boxplot(sem_data[:,4])
 
 plt.figure()
 plt.boxplot(sem_data[:,2])
+
+#%% SIDE INVESTIGATION :P
+
+Q = np.linspace(12,300,50)
+f = 9e9
+tau = Q / (np.pi * f)
+x = np.linspace(5e9,14e9,500)
+
+curves = np.array([np.imag(f / (f**2 - x**2 - 1j * x / (np.pi * t))) for t in tau])
+
+width = []
+for c in curves:
+    i = c.argmax()
+    x1 = np.argmin(np.abs(c[:i] - max(c) * np.ones(len(c[:i])) / 2))
+    x2 = np.argmin(np.abs(c[i:] - max(c) * np.ones(len(c[i:])) / 2)) + i
+    width.append(x2-x1)
+del c, i, x1, x2
+width = np.array(width)
+
+plt.plot(Q, width)
+plt.xlabel("Factor de calidad")
+plt.ylabel("Ancho de la campana (Hz)")
