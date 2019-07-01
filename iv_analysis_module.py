@@ -464,7 +464,7 @@ Problems so far:
 
 #%%
 
-def linearPrediction(t, x, dt, max_svalues=8, autoclose=True):
+def linearPrediction(t, x, dt, svalues=None, max_svalues=8, autoclose=True):
     
     """Applies linear prediction fit to data.
     
@@ -487,6 +487,12 @@ def linearPrediction(t, x, dt, max_svalues=8, autoclose=True):
         Dependent variable :math:`x` in any unit.
     dt : float
         Independent variable's step :math:`dt` in ps.
+    svalues : None, int
+        Number of significant values. If set to None, it's chosen in an 
+        interactive way.
+    max_svalues : int
+        Maximum number of significant values that can be chosen in the 
+        interactive mode.
     autoclose=True : bool
         Says whether to close the intermediate eigenvalues' plot or not.
     
@@ -532,18 +538,20 @@ def linearPrediction(t, x, dt, max_svalues=8, autoclose=True):
     rank = np.linalg.matrix_rank(np.diag(eigenvalues)) # Size measure
     
     # Choose number of significant values
-    Nsignificant = 4
-    fig = plt.figure()
-    ax = plt.subplot()
-    plt.semilogy(eigenvalues, linestyle='none', marker='o', 
-                 fillstyle='none', markersize=10)
-    plt.title('¿Número de valores singulares?')
-    plt.ylabel("Autovalores")
-    Nsignificant = ivp.interactiveIntegerSelector(ax, 
-                                                  min_value=0, 
-                                                  max_value=max_svalues)
-    if autoclose:
-        plt.close(fig)
+    if svalues is None:
+        fig = plt.figure()
+        ax = plt.subplot()
+        plt.semilogy(eigenvalues, linestyle='none', marker='o', 
+                     fillstyle='none', markersize=10)
+        plt.title('¿Número de valores singulares?')
+        plt.ylabel("Autovalores")
+        Nsignificant = ivp.interactiveIntegerSelector(ax, 
+                                                      min_value=0, 
+                                                      max_value=max_svalues)
+        if autoclose:
+            plt.close(fig)
+    else:
+        Nsignificant = svalues
     
     # Crop data according to it
     F = np.zeros((N-M, N-M))
