@@ -464,7 +464,8 @@ Problems so far:
 
 #%%
 
-def linearPrediction(t, x, dt, svalues=None, max_svalues=8, autoclose=True):
+def linearPrediction(t, x, dt, svalues=None, max_svalues=8, 
+                     autoclose=True, printing=True):
     
     """Applies linear prediction fit to data.
     
@@ -495,6 +496,8 @@ def linearPrediction(t, x, dt, svalues=None, max_svalues=8, autoclose=True):
         interactive mode.
     autoclose=True : bool
         Says whether to close the intermediate eigenvalues' plot or not.
+    printing=True : bool
+        Says whether to print some results or not.
     
     Returns
     -------
@@ -655,26 +658,34 @@ def linearPrediction(t, x, dt, svalues=None, max_svalues=8, autoclose=True):
     amplitudes = np.array(amplitudes)
     phases = np.array(phases)
     pi_phases = phases / pi # in radians written as multiples of pi
+    
+    # Print some results, if specified
     if Nfit_terms==0:
         raise ValueError("¡Error! No se encontraron términos de ajuste")
-    elif Nfit_terms>1:
-        print("¡Listo! Encontramos {} términos".format(Nfit_terms))
-    else:
-        print("¡Listo! Encontramos {} término".format(Nfit_terms))
-    print("Frecuencias: {} GHz".format(frequencies))
+    elif printing:
+        if Nfit_terms>1:
+            print("¡Listo! Encontramos {} términos".format(Nfit_terms))
+        else:
+            print("¡Listo! Encontramos {} término".format(Nfit_terms))
+    if printing:
+        print("Frecuencias: {} GHz".format(frequencies))
     
     #%% ---------------------------------------------------------------------------
     # FIT, PLOTS AND STATISTICS
     # -----------------------------------------------------------------------------
     
+    # Calculate terms for plotting
     fit_terms = np.array([a * np.exp(-b*(t-t[0])) * np.cos(omega*(t-t[0]) + phi)
                          for a, b, omega, phi in zip(amplitudes,
                                                      damping_constants,
                                                      angular_frequencies,
                                                      phases)]).T
     fit = sum(fit_terms.T)
+    
+    # Make statistics and print them, if specified
     chi_squared = sum( (fit - x)**2 ) / N # Best if absolute is smaller
-    print("Chi cuadrado \u03C7\u00B2: {:.2e}".format(chi_squared))
+    if printing:
+        print("Chi cuadrado \u03C7\u00B2: {:.2e}".format(chi_squared))
                      
     ## Statistics of the residue
     #residue = x - fit

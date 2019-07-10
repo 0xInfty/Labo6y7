@@ -5,7 +5,7 @@ It could be divided into 3 sections:
     (1) making new directories and free files to avoid overwriting 
     ('newDir', 'freeFile')
     (2) loading data from PumpProbe experiments ('loadPumpProbe', 
-    'loadNicePumpProbe')
+    'loadNicePumpProbe', 'filenameTo...')
     (2) saving data into files with the option of not overwriting 
     ('saveTxt')
     (4) loading data from files ('retrieveHeader', 'retrieveFooter')
@@ -295,6 +295,31 @@ def loadNicePumpProbe(filename):
                         nrepetitions=nrepetitions))
     
     return t, V, details
+
+#%%
+
+def filenameToMeasureFilename(filename, home=os.getcwd()):
+    
+    """Given a filename 'M_20190610_01', returns path to fits' data"""
+    
+    date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
+    date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
+    fits_filename = os.path.join(home, 'Mediciones', date, filename+'.txt')
+    
+    return fits_filename
+
+#%%
+
+def filenameToFitsFilename(filename, home=os.getcwd()):
+    
+    """Given a filename 'M_20190610_01', returns path to fits' data"""
+    
+    date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
+    date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
+    fits_filename = os.path.join(home, 'Mediciones', date, 
+                                 'Ajustes', filename+'.txt')
+    
+    return fits_filename
 
 #%%
 
