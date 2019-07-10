@@ -14,8 +14,8 @@ import numpy as np
 #%%
 
 # Parameters
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
-name = 'M_20190605_11'
+home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7'
+name = 'M_20190610_02'
 
 # Save parameters
 autosave = True
@@ -33,12 +33,12 @@ plot_params = ivu.InstancesDict(plot_params)
 fit_params = dict(
         use_full_mean = True,
         use_experiments = [1], # First is 0, not 1!
-        send_tail_to_zero = False,
+        send_tail_to_zero = True,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
         choose_tf = False,
-        max_svalues = 8,
+        max_svalues = 100,
         )
 fit_params = ivu.InstancesDict(fit_params)
 
@@ -55,9 +55,11 @@ else:
     data = np.mean(V[:, fit_params.use_experiments], axis=1)
 
 # Choose time interval to fit
-t0 = -8.122954823529412 # This is an initial time we think that optimizes it
+
+t0 = 40.12385 # This is an initial time we think that optimizes it
 i = np.argmin(np.abs(t-t0)) # We'll take this index as main initial time
 Ni = 40 # We'll try this many index to the right and left from the main index
+svalues = 10 #nuber of singular values
 
 #%%
 
@@ -82,7 +84,7 @@ for j in range(max(i-Ni,0), i+Ni):
         res, other, plot = iva.linearPrediction(tj, 
                                                 dataj, 
                                                 details['dt'], 
-                                                svalues=4,
+                                                svalues=svalues,
                                                 printing=False)
         jgood.append(j)
         results.append(res)
@@ -103,6 +105,7 @@ quality = []
 chi = []
 meanqdiff = []
 stdqdiff = []
+nterms = []
 for j in jgood:
     res = results[j]
     other = other_results[j]
@@ -116,6 +119,7 @@ for j in jgood:
             term = fit_terms[j]
             meanqdiff.append( np.mean( (term[:,1]-term[:,imax+2])**2 ) )
             stdqdiff.append( np.std( (term[:,1]-term[:,imax+2])**2 ))
+            nterms.append(res.shape[0])
     else:
         if res[0,0] != 0:
             frequencies.append(res[0,0])
@@ -126,7 +130,32 @@ for j in jgood:
             term = fit_terms[j]
             meanqdiff.append( np.mean( (term[:,1]-term[:,3])**2 ) )
             stdqdiff.append( np.std( (term[:,1]-term[:,imax+2])**2 ))
+            nterms.append(res.shape[0])
 del res, other
+
+#%%
+fig, axs = plt.subplots(2, 3)
+
+axs[0, 0].plot(jreallygood, frequencies, 'x')
+axs[0, 0].grid()
+
+axs[0, 1].plot(jreallygood, quality, 'o')
+axs[0, 1].grid()
+
+axs[0, 2].plot(jreallygood, nterms, 'o')
+axs[0, 2].grid()
+
+axs[1, 0].plot(jreallygood, chi, '.')
+axs[1, 0].grid()
+
+axs[1, 1].plot(jreallygood, meanqdiff, 'x')
+axs[1, 1].grid()
+
+axs[1, 2].plot(jreallygood, stdqdiff, 'x')
+axs[1, 2].grid()
+
+
+plt.show()
 
 #%%
 
@@ -134,23 +163,37 @@ plt.figure()
 plt.plot(jreallygood, frequencies, 'x')
 plt.plot(i, frequencies[i], 'xr')
 plt.ylabel('Frecuencia (GHz)')
+plt.grid()
 
 plt.figure()
 plt.plot(jreallygood, quality, 'o')
 plt.plot(i, quality[i], 'or')
 plt.ylabel('Factor de calidad')
+plt.grid()
 
 plt.figure()
 plt.plot(jreallygood, chi, '.')
 plt.plot(i, chi[i], 'xr')
 plt.ylabel('Chi cuadrado')
+plt.grid()
 
 plt.figure()
 plt.plot(jreallygood, meanqdiff, 'x')
 plt.plot(i, meanqdiff[i], 'xr')
 plt.ylabel('Diferencia cuadrática media')
+plt.grid()
 
 plt.figure()
 plt.plot(jreallygood, stdqdiff, 'x')
 plt.plot(i, stdqdiff[i], 'xr')
 plt.ylabel('Desviación estándar de la diferencia cuadrática')
+plt.grid()
+
+plt.figure()
+plt.plot(jreallygood, nterms, 'o')
+plt.plot(i, stdqdiff[i], 'xr')
+plt.ylabel('Numero de terminos ajustados')
+plt.grid()
+
+
+
