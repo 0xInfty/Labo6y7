@@ -15,7 +15,7 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7'
+home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 # Path to a list of filenames and rods to analize
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
@@ -35,14 +35,7 @@ with open(rods_filename, 'r') as file:
     del line
 
 # Now create a list of folders for each filename    
-def filenameToFitsFilename(filename):
-    """Given a filename 'M_20190610_01', returns path to fits' data"""
-    date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
-    date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
-    fits_filename = os.path.join(home, 'Mediciones', date, 
-                                 'Ajustes', filename+'.txt')
-    return fits_filename
-fits_filenames = [filenameToFitsFilename(file) for file in filenames]
+fits_filenames = [ivs.filenameToFitsFilename(file) for file in filenames]
 
 # Load data from each fit
 fits_data = []
