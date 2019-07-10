@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import iv_save_module as ivs
 import iv_utilities_module as ivu
 import numpy as np
+import os
 
 #%%
 
@@ -130,6 +131,7 @@ del res, other
 
 #%%
 
+# Make plots showing results
 plt.figure()
 plt.plot(jreallygood, frequencies, 'x')
 plt.plot(i, frequencies[i], 'xr')
@@ -154,3 +156,12 @@ plt.figure()
 plt.plot(jreallygood, stdqdiff, 'x')
 plt.plot(i, stdqdiff[i], 'xr')
 plt.ylabel('Desviación estándar de la diferencia cuadrática')
+
+# Save data
+data = np.array([jreallygood, list(t[jreallygood]), frequencies, quality, chi, meanqdiff, stdqdiff]).T
+header = ['Índice temporal inicial', 'Tiempo inicial (ps)', 'Frecuencia (GHz)', 
+          'Factor de calidad', 'Chi cuadrado', 'Diferencia cuadrática media', 
+          'Desviación estándar de la diferencia cuadrática']
+fit_params.update(dict(svalues=4, i=i, Ni=Ni))
+ivs.saveTxt(os.path.join(home, r'Análisis/{}_LP.txt'.format(name)), data, 
+            header=header, footer=fit_params.__dict__)
