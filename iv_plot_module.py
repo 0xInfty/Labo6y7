@@ -475,7 +475,7 @@ class IntFillingCursor(FillingCursor):
 
 def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
 
-    """Plots all PumpProbe experiments from a file and its mean.
+    """Plots a PumpProbe experiments from a file and its mean.
     
     Can also make an interactive plot, which holds a save button and allows to 
     choose only certain experiments to be shown from the legend.
