@@ -194,6 +194,3 @@ plt.plot(jreallygood, nterms, 'o')
 plt.plot(i, stdqdiff[i], 'xr')
 plt.ylabel('Numero de terminos ajustados')
 plt.grid()
-
-
-
