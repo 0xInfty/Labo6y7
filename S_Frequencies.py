@@ -15,7 +15,7 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Luciana\OneDrive\Labo 6 y 7'
 # Path to a list of filenames and rods to analize
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
@@ -35,7 +35,7 @@ with open(rods_filename, 'r') as file:
     del line
 
 # Now create a list of folders for each filename    
-fits_filenames = [ivs.filenameToFitsFilename(file) for file in filenames]
+fits_filenames = [ivs.filenameToFitsFilename(file, home) for file in filenames]
 
 # Load data from each fit
 fits_data = []
@@ -133,18 +133,42 @@ ax1.grid(axis='x', which='both')
 #plt.xlabel('1/Longitud (1/nm)')
 
 length = sem_data[:,2]
-young = 42e9 # E = 78 GPa
-young_2 = 79e9
+young = 45e9 # E = 78 GPa 45
+young_2 = 64e9
+young_3 = 78e9
 density = 19300 # kg/m3
 theory = (np.sqrt(young/density) / (2 * length*1e-9)) * 1e-9
 theory_2 = (np.sqrt(young_2/density) / (2 * length*1e-9)) * 1e-9
+theory_3 = (np.sqrt(young_3/density) / (2 * length*1e-9)) * 1e-9
+
+factor = 0.2 # fraction that is inmersed
+omega_0 = np.pi * np.sqrt(young_2/density) / (length*1e-9)
+G = 30e9 # Pa
+K1 = G * 2.75 # Pa
+d = 27e-9 # m           
+A = np.pi * (d**2) / 4 # m2
+posible_increment = np.sqrt(omega_0**2 + factor*K1/(density*A)) / np.sqrt(omega_0**2)
+
+plt.figure()
+plt.plot(length, posible_increment)
+
+factor_4 = 0.2  
+theory_4 = np.sqrt(omega_0**2 + factor_4*K1/(density*A)) * 1e-9 / (2 * np.pi)
+factor_5 = 0.1
+theory_5 = np.sqrt(omega_0**2 + factor_5*K1/(density*A)) * 1e-9 / (2 * np.pi)
 
 plt.figure()
 plt.loglog(length, fits_data[:,0],'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.loglog(length, theory, '-')
-plt.loglog(length, theory_2, '-')
+plt.loglog(length, theory, '-', label="{} GPa".format(young/1e9))
+plt.loglog(length, theory_2, '-', label="{} GPa".format(young_2/1e9))
+plt.loglog(length, theory_3, '-', label="{} GPa".format(young_3/1e9))
+plt.loglog(length, theory_4, '-', label="{} en {} GPa".format(factor_4,
+                                                              young_3/1e9))
+plt.loglog(length, theory_5, '-', label="{} en {} GPa".format(factor_5,
+                                                              young_3/1e9))
+plt.legend()
 
 rsq, m, b = iva.linearFit(1/length, fits_data[:,0], M = True)
 plt.ylabel('Frecuencia (GHz)')
