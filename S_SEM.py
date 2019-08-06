@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 # Parameters
-home = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
 path = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1')
 series = 'LIGO1_1'
 
@@ -121,8 +121,8 @@ da = np.std(angle, axis=0)
 # Apply correction due to method
 H = H + dH
 W = W + dW
-A = W/H
-dA = W*dH/H**2 + dW/H
+A = H/W
+dA = H*dW/W**2 + dH/W
 
 # Organize results
 results = np.array([W,dW,H,dH,A,dA,a,da]).T
@@ -133,7 +133,7 @@ heading = ["Ancho (nm)", "Error (nm)",
 
 # Save data
 ivs.saveTxt(
-    os.path.join(path,'Resultados_{}.txt'.format(series)), 
+    os.path.join(path,'Resultados_SEM_{}.txt'.format(series)), 
     results,
     header=heading, footer=dict(rods=rods),
     overwrite=True
