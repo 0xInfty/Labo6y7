@@ -15,10 +15,10 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\Luciana\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
 # Path to a list of filenames and rods to analize
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
-sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_LIGO1_1.txt')
+sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_SEM_LIGO1_1.txt')
 desired_frequency = 10 # in GHz
 minimum_frequency = 10
 
@@ -86,7 +86,7 @@ ivu.copy(table)
 del heading, items
 
 # Save all important data to a single file
-whole_filename = os.path.join(home, r'Análisis/Resultados_LIGO1_1.txt')
+whole_filename = os.path.join(home, r'Análisis/Resultados_Totales_LIGO1_1.txt')
 whole_data = np.array([*sem_data[:,:6].T, fits_data[:,0], fits_data[:,2]])
 ivs.saveTxt(whole_filename, whole_data, 
             header=["Ancho (nm)", "Error (nm)",
@@ -125,50 +125,70 @@ ax1.tick_params(length=2)
 ax1.grid(axis='x', which='both')
 #ax1.tick_params(axis='x', labelrotation=90)
 
-#%% 2) FREQUENCY AND LENGTH
+#%% 2A) FREQUENCY AND LENGTH
+# --> Try out some known values
 
 #plt.figure()
 #plt.plot(1/sem_data[:,2],fits_data[:,0],'o')
 #plt.ylabel('Frecuencia (GHz)')
 #plt.xlabel('1/Longitud (1/nm)')
 
-length = sem_data[:,2]
-young = 45e9 # E = 78 GPa 45
-young_2 = 64e9
-young_3 = 78e9
+# Parameters
 density = 19300 # kg/m3
-theory = (np.sqrt(young/density) / (2 * length*1e-9)) * 1e-9
-theory_2 = (np.sqrt(young_2/density) / (2 * length*1e-9)) * 1e-9
-theory_3 = (np.sqrt(young_3/density) / (2 * length*1e-9)) * 1e-9
-
-factor = 0.2 # fraction that is inmersed
-omega_0 = np.pi * np.sqrt(young_2/density) / (length*1e-9)
 G = 30e9 # Pa
 K1 = G * 2.75 # Pa
-d = 27e-9 # m           
-A = np.pi * (d**2) / 4 # m2
-posible_increment = np.sqrt(omega_0**2 + factor*K1/(density*A)) / np.sqrt(omega_0**2)
+diameter = 27e-9 # m
+# Why is this only lateral surface?
+
+# Data
+length = sem_data[:,2]
+young = [45e9, 64e9, 78e9]
+factor = [0, .1, .2] # surface fraction that is inmerse
+
+# Theory models
+def area(length, diameter=diameter):
+    A = np.pi * (diameter**2) / 4#  + np.pi * diameter * length # m2
+    # Why is this only lateral surface?
+    return A
+
+def f_simple(length, young):
+    f_0 = (np.sqrt(young/density) / (2 * length*1e-9)) * 1e-9
+    return f_0
+
+def f_complex(length, young, factor, density=density, K1=K1):
+    f_0 = f_simple(length, young)
+    f = np.sqrt( (2*np.pi*f_0*1e9)**2 + factor*K1/(density*area(length)) ) 
+    f = f * 1e-9/(2*np.pi)
+    return f
+
+# Theory predictions
+f_0 = np.array([f_simple(l, y) for l in length for y in young])
+f_0 = f_0.reshape([len(length), len(young)])
+f = np.array([f_complex(l, young[-1], c) for l in length for c in factor])
+f = f.reshape([len(length), len(factor)])
+
+#posible_increment = np.sqrt(omega_0**2 + factor*K1/(density*A)) / np.sqrt(omega_0**2)
+#plt.figure()
+#plt.plot(length, posible_increment)
 
 plt.figure()
-plt.plot(length, posible_increment)
-
-factor_4 = 0.2  
-theory_4 = np.sqrt(omega_0**2 + factor_4*K1/(density*A)) * 1e-9 / (2 * np.pi)
-factor_5 = 0.1
-theory_5 = np.sqrt(omega_0**2 + factor_5*K1/(density*A)) * 1e-9 / (2 * np.pi)
-
-plt.figure()
+plt.title('Modelo simple')
 plt.loglog(length, fits_data[:,0],'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.loglog(length, theory, '-', label="{} GPa".format(young/1e9))
-plt.loglog(length, theory_2, '-', label="{} GPa".format(young_2/1e9))
-plt.loglog(length, theory_3, '-', label="{} GPa".format(young_3/1e9))
-plt.loglog(length, theory_4, '-', label="{} en {} GPa".format(factor_4,
-                                                              young_3/1e9))
-plt.loglog(length, theory_5, '-', label="{} en {} GPa".format(factor_5,
-                                                              young_3/1e9))
-plt.legend()
+for freq in f_0.T: plt.loglog(length, freq, '-')
+plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young])
+
+plt.figure()
+plt.title('Modelo complejo con Young {} GPa'.format(young[-1]/1e9))
+plt.loglog(length, fits_data[:,0],'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+for freq in f.T: plt.loglog(length, freq, '-')
+plt.legend(["Datos"] + ["Sumergido {:.0f}%".format(c*100) for c in factor])
+
+#%% 2B) FREQUENCY AND LENGTH
+# --> Try a linear fit
 
 rsq, m, b = iva.linearFit(1/length, fits_data[:,0], M = True)
 plt.ylabel('Frecuencia (GHz)')
@@ -179,7 +199,22 @@ print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit,
                                                         young_fit_error, 
                                                         units="Pa")))
 
-#%% 3) FREQUENCY AND ASPECT RELATION
+#%% 2C) FREQUENCY AND LENGTH
+# --> Try a linear fit with a forced slope -1
+
+def function(x, b):
+    return -x + b
+rsq_2, b_2 = iva.nonLinearFit(np.log(sem_data[:,2]), 
+                              np.log(fits_data[:,0]), 
+                              function)
+b_2 = b_2[0]
+young_fit_2 = density * (2 * np.exp(b_2[0]))**2
+young_fit_error_2 = 2 * density * b_2[1] * (2 * np.exp(b_2[0]))**2 
+print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit_2, 
+                                                        young_fit_error_2, 
+                                                        units="Pa")))
+
+#%% 3) FREQUENCY VS Q AND WIDTH
 
 # Plot results 
 fig, ax1 = plt.subplots()
@@ -200,46 +235,8 @@ plt.show()
 
 # Format graph
 ax1.grid(axis='both')
-                     
-#%% 4) FREQUENCY AND LENGTH WITHOUT OUTLIERS
 
-# Try it all again, removing outliers
-nice_rods = fits_data[:,0] >= minimum_frequency
-nice_fits_data = fits_data[nice_rods,:]
-nice_sem_data = sem_data[nice_rods, :]
-
-rsq, m, b = iva.linearFit(1/nice_sem_data[:,2], nice_fits_data[:,0])
-plt.ylabel('Frecuencia (GHz)')
-plt.xlabel('Inverso de longitud (1/nm)')
-young_fit = 4 * density * (m[0]**2)
-young_fit_error = 8 * density * m[1] * m[0]
-print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit, 
-                                                        young_fit_error, 
-                                                        units="Pa")))
-
-#%% 5) FREQUENCY AND ASPECT RELATION WITHOUT OUTLIERS
-
-# Plot results 
-fig, ax1 = plt.subplots()
-
-# Frequency vs width plot, lower axis
-ax1.set_xlabel('Ancho (nm)', color='tab:red')
-ax1.set_ylabel('Frecuencia (GHz)')
-ax1.plot(nice_sem_data[:,0], nice_fits_data[:,2], 'ro')
-ax1.tick_params(axis='x', labelcolor='tab:red')
-
-# Frequency vs quality factor, upper axis
-ax2 = ax1.twiny()  # Second axes that shares the same y-axis
-ax2.set_xlabel('Factor de calidad (u.a.)', color='tab:blue')
-ax2.plot(nice_sem_data[:,4], nice_fits_data[:,2], 'bx')
-ax2.tick_params(axis='x', labelcolor='tab:blue')
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.show()
-
-# Format graph
-ax1.grid(axis='both')
-
-#%% 6) HISTOGRAMS
+#%% 4) HISTOGRAMS
 
 fig, ax = plt.subplots()
 
@@ -257,22 +254,8 @@ bins_limits = ax.hist(fits_data[:,0])[1]
 plt.xlabel("Frecuencia (GHz)")
 plt.ylabel("Repeticiones")
 
-#%% FREQUENCY AND LENGTH FORCED FIT TO SLOPE -1
 
-# Try to fit only the y-interccept, stating that the slope must be -1.
-def function(x, b):
-    return -x + b
-rsq_2, b_2 = iva.nonLinearFit(np.log(sem_data[:,2]), 
-                              np.log(fits_data[:,0]), 
-                              function)
-b_2 = b_2[0]
-young_fit_2 = density * (2 * np.exp(b_2[0]))**2
-young_fit_error_2 = 2 * density * b_2[1] * (2 * np.exp(b_2[0]))**2 
-print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit_2, 
-                                                        young_fit_error_2, 
-                                                        units="Pa")))
-
-#%% 8) BOX PLOTS
+#%% 5) BOX PLOTS
 
 plt.figure()
 plt.boxplot(fits_data[:,0])
@@ -283,7 +266,7 @@ plt.boxplot(sem_data[:,4])
 plt.figure()
 plt.boxplot(sem_data[:,2])
 
-#%% SIDE INVESTIGATION :P
+#%% *) RAMAN-LIKE SPECTRUM SIDE INVESTIGATION
 
 Q = np.linspace(12,300,50)
 f = 9e9
