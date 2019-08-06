@@ -11,22 +11,45 @@ import iv_save_module as ivs
 import iv_utilities_module as ivu
 import numpy as np
 import os
+import random as ran
 
 #%%
 
 # Parameters
 home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
-#names = [#'M_20190605_11',
-names = ['M_20190610_07',
-         'M_20190605_07',
-         'M_20190610_13',
-         'M_20190610_01',
-         'M_20190610_12'] # OUTLIERS
-series = 'Rare'
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
+#sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_SEM_LIGO1_1.txt')
 desired_frequency = 9 # Desired frequency for the ideal fit
 Ni = 40 # How many index around the main one we'll try for the initial time
 autosave = True
 autoclose = True
+
+## --> Rare Series
+#names = ['M_20190610_07', 'M_20190605_07', 'M_20190610_13', 'M_20190610_01', 'M_20190610_12'] # OUTLIERS
+#series = 'Rare'
+
+# --> Random Series
+#names = ['M_20190605_07', 'M_20190605_11', 'M_20190605_12', 'M_20190610_06', 'M_20190610_07']
+#series = 'Random_1'
+
+# Look for the list of rods and filenames
+filenames = [] # Will contain filenames like 'M_20190610_01'
+rods = [] # Will contain rods' positions like '1,2'
+with open(rods_filename, 'r') as file:
+    for line in file:
+        if line[0]!='#':
+            filenames.append(line.split('\t')[0]) # Save filenames
+            rods.append(line.split('\t')[1].split('\n')[0]) # Save rods
+    del line
+
+index = ran.sample(range(len(rods)), 5)
+names = [filenames[i] for i in index]
+series = 'Random_1'
+
+# Keep only the selected filenames and rods
+index = [filenames.index(n) for n in names]
+rods = [rods[i] for i in index]
+del filenames
 
 #%%
 
@@ -64,6 +87,20 @@ def filenameToFilename(filename, series='', home=home):
     date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
     date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
     filename = os.path.join(base, filename+'.txt')
+    
+    return filename
+
+def figsFilename(fig_name, series=''):
+    
+    """Given a fig_name 'DifCuadráticaMedia', returns path to fig"""
+    
+    if series!='':
+        series = '_{}'.format(series)
+    base = os.path.join(home, r'Análisis/StudyLP'+series)
+    if not os.path.isdir(base):
+        os.makedirs(base)
+    
+    filename = os.path.join(base, fig_name+'.png')
     
     return filename
 
@@ -371,22 +408,6 @@ del header, results
 
 #%% Analyse this data
 
-# Parameters
-home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
-#names = [#'M_20190605_11',
-names = ['M_20190610_07',
-         'M_20190605_07',
-         'M_20190610_13',
-         'M_20190610_01',
-         'M_20190610_12'] # OUTLIERS
-rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
-sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_SEM_LIGO1_1.txt')
-series = 'Rare'
-desired_frequency = 9 # Desired frequency for the ideal fit
-Ni = 40 # How many index around the main one we'll try for the initial time
-autosave = True
-autoclose = True
-
 # Load data
 data = []
 footer = []
@@ -394,6 +415,7 @@ for n in names:
     d, header, f = ivs.loadTxt(filenameToFilename(n, series))
     data.append(d)
     footer.append(f)
+del d, f
 
 # Look for the list of rods and filenames
 filenames = [] # Will contain filenames like 'M_20190610_01'
@@ -405,49 +427,104 @@ with open(rods_filename, 'r') as file:
             rods.append(line.split('\t')[1].split('\n')[0]) # Save rods
     del line
 
-# Also load data from SEM dimension analysis
-sem_data, sem_header, sem_footer = ivs.loadTxt(sem_filename)
-other_rods = sem_footer['rods']
-new_data = []
-for r in rods:
-    i = other_rods.index(r)
-    new_data.append(sem_data[i])
-sem_data = np.array(new_data)
-del new_data, other_rods, sem_footer
+## Also load data from SEM dimension analysis
+#sem_data, sem_header, sem_footer = ivs.loadTxt(sem_filename)
+#other_rods = sem_footer['rods']
+#new_data = []
+#for r in rods:
+#    i = other_rods.index(r)
+#    new_data.append(sem_data[i])
+#sem_data = np.array(new_data)
+#del new_data, sem_footer
 
 # Keep only data related to my selected files
 index = [filenames.index(n) for n in names]
+rods = [rods[i] for i in index]
+#index = [other_rods.index(r) for r in rods]
+#sem_data = sem_data[index,:]
+del index, n, filenames
 
-## Select only some data to visualize
-#m = min([d.shape[0] for d in data])
-#cropped_data = np.array([d[:m,:].T for d in data]) 
-## d[i,j,k] holds i-file, j-column, k-element
-## What's on columns? See header
+# Make several plots
+plt.figure()
+ax = plt.subplot()
+for d in data:
+    ax.plot(d[:,1]-d[0,1], d[:,2])
+plt.legend(rods)
+plt.xlabel('Tiempo inicial relativo (ps)')
+plt.ylabel('Frecuencia (GHz)')
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='x', which='both')
+plt.show()
+for l in ax1.get_xticklabels():
+    l.set_visible(False)
+del l
+if autosave:
+    plt.savefig(figsFilename('Frecuencia', series), 
+                bbox_inches='tight')
+if autoclose:
+    plt.close(plt.gcf())
 
 plt.figure()
+ax = plt.subplot()
 for d in data:
-    plt.plot(d[:,1]-d[0,1], d[:,2])
-    plt.legend(names)
-    plt.xlabel('Tiempo inicial relativo (ps)')
-    plt.ylabel('Frecuencia (GHz)')
+    ax.plot(d[:,1]-d[0,1], d[:,3])
+plt.legend(rods)
+plt.xlabel('Tiempo inicial relativo (ps)')
+plt.ylabel('Factor de calidad (GHz)')
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='x', which='both')
+plt.show()
+for l in ax1.get_xticklabels():
+    l.set_visible(False)
+del l
+if autosave:
+    plt.savefig(figsFilename('FCalidad', series), 
+                bbox_inches='tight')
+if autoclose:
+    plt.close(plt.gcf())
 
 plt.figure()
+ax = plt.subplot()
 for d in data:
-    plt.plot(d[:,1]-d[0,1], d[:,3])
-    plt.legend(names)
-    plt.xlabel('Tiempo inicial relativo (ps)')
-    plt.ylabel('Factor de calidad')
+    ax.plot(d[:,1]-d[0,1], d[:,4])
+plt.legend(rods)
+plt.xlabel('Tiempo inicial relativo (ps)')
+plt.ylabel('Chi cuadrado')
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='x', which='both')
+plt.show()
+for l in ax1.get_xticklabels():
+    l.set_visible(False)
+del l
+if autosave:
+    plt.savefig(figsFilename('ChiCuadrado', series), 
+                bbox_inches='tight')
+if autoclose:
+    plt.close(plt.gcf())
 
 plt.figure()
+ax = plt.subplot()
 for d in data:
-    plt.plot(d[:,1]-d[0,1], d[:,4])
-    plt.legend(names)
-    plt.xlabel('Tiempo inicial relativo (ps)')
-    plt.ylabel('Chi cuadrado')
-
-plt.figure()
-for d in data:
-    plt.plot(d[:,1]-d[0,1], d[:,5])
-    plt.legend(names)
-    plt.xlabel('Tiempo inicial relativo (ps)')
-    plt.ylabel('Diferencia cuadrática media')
+    ax.plot(d[:,1]-d[0,1], d[:,5])
+plt.legend(rods)
+plt.xlabel('Tiempo inicial relativo (ps)')
+plt.ylabel('Diferencia cuadrática media')
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='x', which='both')
+plt.show()
+for l in ax1.get_xticklabels():
+    l.set_visible(False)
+del l
+if autosave:
+    plt.savefig(figsFilename('DifCuadrática', series), 
+                bbox_inches='tight')
+if autoclose:
+    plt.close(plt.gcf())
