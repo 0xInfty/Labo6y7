@@ -368,3 +368,86 @@ for k in range(len(names)):
                 header=header, footer=fit_params[k].__dict__)
 
 del header, results
+
+#%% Analyse this data
+
+# Parameters
+home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
+#names = [#'M_20190605_11',
+names = ['M_20190610_07',
+         'M_20190605_07',
+         'M_20190610_13',
+         'M_20190610_01',
+         'M_20190610_12'] # OUTLIERS
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
+sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_SEM_LIGO1_1.txt')
+series = 'Rare'
+desired_frequency = 9 # Desired frequency for the ideal fit
+Ni = 40 # How many index around the main one we'll try for the initial time
+autosave = True
+autoclose = True
+
+# Load data
+data = []
+footer = []
+for n in names:
+    d, header, f = ivs.loadTxt(filenameToFilename(n, series))
+    data.append(d)
+    footer.append(f)
+
+# Look for the list of rods and filenames
+filenames = [] # Will contain filenames like 'M_20190610_01'
+rods = [] # Will contain rods' positions like '1,2'
+with open(rods_filename, 'r') as file:
+    for line in file:
+        if line[0]!='#':
+            filenames.append(line.split('\t')[0]) # Save filenames
+            rods.append(line.split('\t')[1].split('\n')[0]) # Save rods
+    del line
+
+# Also load data from SEM dimension analysis
+sem_data, sem_header, sem_footer = ivs.loadTxt(sem_filename)
+other_rods = sem_footer['rods']
+new_data = []
+for r in rods:
+    i = other_rods.index(r)
+    new_data.append(sem_data[i])
+sem_data = np.array(new_data)
+del new_data, other_rods, sem_footer
+
+# Keep only data related to my selected files
+index = [filenames.index(n) for n in names]
+
+## Select only some data to visualize
+#m = min([d.shape[0] for d in data])
+#cropped_data = np.array([d[:m,:].T for d in data]) 
+## d[i,j,k] holds i-file, j-column, k-element
+## What's on columns? See header
+
+plt.figure()
+for d in data:
+    plt.plot(d[:,1]-d[0,1], d[:,2])
+    plt.legend(names)
+    plt.xlabel('Tiempo inicial relativo (ps)')
+    plt.ylabel('Frecuencia (GHz)')
+
+plt.figure()
+for d in data:
+    plt.plot(d[:,1]-d[0,1], d[:,3])
+    plt.legend(names)
+    plt.xlabel('Tiempo inicial relativo (ps)')
+    plt.ylabel('Factor de calidad')
+
+plt.figure()
+for d in data:
+    plt.plot(d[:,1]-d[0,1], d[:,4])
+    plt.legend(names)
+    plt.xlabel('Tiempo inicial relativo (ps)')
+    plt.ylabel('Chi cuadrado')
+
+plt.figure()
+for d in data:
+    plt.plot(d[:,1]-d[0,1], d[:,5])
+    plt.legend(names)
+    plt.xlabel('Tiempo inicial relativo (ps)')
+    plt.ylabel('Diferencia cuadrática media')
