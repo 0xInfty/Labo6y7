@@ -16,11 +16,33 @@ import iv_analysis_module as iva
 
 # Main folder's path
 home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
-# Path to a list of filenames and rods to analize
-rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
-sem_filename = os.path.join(home, r'Muestras\SEM\LIGO1\LIGO1 Geometrías\1\Resultados_SEM_LIGO1_1.txt')
 desired_frequency = 10 # in GHz
 minimum_frequency = 10
+
+# Path to a list of filenames and rods to analize
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
+sem_series = ['LIGO1_1']
+sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
+name = 'LIGO1'
+
+"""
+rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
+sem_series = ['M135_5_1D', 'M135_7B_1D']
+sem_short_series = lambda series : series.split('_')[1]+' {}'
+name = 'M135'
+"""
+
+def filenameToSEMFilename(series, home=home):
+    
+    """Given a series 'M135_7B_1D', returns path to SEM data"""
+    
+    filename = 'Resultados_SEM_{}.txt'.format(series)
+    series = series.split('_') # From 'M_20190610_01' take '20190610'
+    sem_filename = os.path.join(home, 'Muestras\SEM', *series, filename)
+    
+    return sem_filename
+
+sem_filename = [filenameToSEMFilename(s) for s in sem_series]
 
 #%% LOAD DATA -----------------------------------------------------------------
 
@@ -31,7 +53,9 @@ with open(rods_filename, 'r') as file:
     for line in file:
         if line[0]!='#':
             filenames.append(line.split('\t')[0]) # Save filenames
-            rods.append(line.split('\t')[1].split('\n')[0]) # Save rods
+            aux = line.split('\t')[1:]
+            aux = r' '.join(aux)
+            rods.append(aux.split('\n')[0]) # Save rods
     del line
 
 # Now create a list of folders for each filename    
@@ -47,22 +71,38 @@ for file in fits_filenames:
 del file, data, footer
 
 # Keep only the fit term that has the closest frequency to the desired one
-index = []
+fits_new_data = []
 for rod, fit in zip(rods, fits_data):
-    i = np.argmin(abs(fit[:,0] - desired_frequency*np.ones(fit.shape[0])))
-    index.append(i)
-del rod, fit, i
-fits_data = np.array([fit[i,:] for fit, i in zip(fits_data,index)])
-del index
+    try:
+        i = np.argmin(abs(fit[:,0] - desired_frequency*np.ones(fit.shape[0])))
+        fits_new_data.append([*fit[i,:]])
+    except IndexError:
+        fits_new_data.append([*fit])
+fits_data = np.array(fits_new_data)
+del rod, fit, i, fits_new_data
 
 # Also load data from SEM dimension analysis
-other_data, other_header, other_footer = ivs.loadTxt(sem_filename)
-other_rods = other_footer['rods']
-new_data = []
+sem_data = []
+other_rods = []
+for sf, s in zip(sem_filename, sem_series):
+    d, other_header, f = ivs.loadTxt(sf)
+    r = [sem_short_series(s).format(rs) for rs in f['rods']]
+    sem_data.append(d)
+    other_rods = other_rods + r
+del d, f, r
+
+other_data = []
+for s in sem_data:
+    for si in s:
+        other_data.append([*si])
+other_data =  np.array(other_data)
+del sem_data
+
+sem_data = []
 for r in rods:
     i = other_rods.index(r)
-    new_data.append(other_data[i])
-sem_data = np.array(new_data)
+    sem_data.append(other_data[i])
+sem_data = np.array(sem_data)
 
 # Prepare important data for a table 
 items = []
@@ -86,16 +126,15 @@ ivu.copy(table)
 del heading, items
 
 # Save all important data to a single file
-whole_filename = os.path.join(home, r'Análisis/Resultados_Totales_LIGO1_1.txt')
+whole_filename = os.path.join(home, r'Análisis/Resultados_Totales_{}.txt'.format(name))
 whole_data = np.array([*sem_data[:,:6].T, fits_data[:,0], fits_data[:,2]])
-ivs.saveTxt(whole_filename, whole_data, 
+ivs.saveTxt(whole_filename, whole_data.T, 
             header=["Ancho (nm)", "Error (nm)",
                     "Longitud (nm)", "Error (nm)", 
                     "Relación de aspecto", "Error",
                     "Frecuencia (GHz)", "Factor de calidad"],
             footer=dict(rods=rods),
             overwrite=True)
-
 
 #%% ANALYSIS ------------------------------------------------------------------
 
@@ -143,7 +182,7 @@ diameter = 27e-9 # m
 # Data
 length = sem_data[:,2]
 young = [45e9, 64e9, 78e9]
-factor = [0, .1, .2] # surface fraction that is inmerse
+factor = [0, .1, .2, .3, .4] # surface fraction that is inmerse
 
 # Theory models
 def area(length, diameter=diameter):
@@ -194,7 +233,7 @@ rsq, m, b = iva.linearFit(1/length, fits_data[:,0], M = True)
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Inverso de longitud (1/nm)')
 young_fit = 4 * density * (m[0]**2)
-young_fit_error = 8 * density * m[1] * m[0]
+young_fit_error = np.abs(8 * density * m[1] * m[0])
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit, 
                                                         young_fit_error, 
                                                         units="Pa")))
