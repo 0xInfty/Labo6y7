@@ -162,7 +162,7 @@ plt.xticks(np.arange(len(rods)), rods, rotation='vertical')
 plt.grid(which='both', axis='x')
 ax1.tick_params(length=2)
 ax1.grid(axis='x', which='both')
-#ax1.tick_params(axis='x', labelrotation=90)
+ax1.tick_params(axis='x', labelrotation=90)
 
 #%% 2A) FREQUENCY AND LENGTH
 # --> Try out some known values
@@ -203,7 +203,7 @@ def f_complex(length, young, factor, density=density, K1=K1):
 # Theory predictions
 f_0 = np.array([f_simple(l, y) for l in length for y in young])
 f_0 = f_0.reshape([len(length), len(young)])
-f = np.array([f_complex(l, young[-1], c) for l in length for c in factor])
+f = np.array([f_complex(l, young[1], c) for l in length for c in factor])
 f = f.reshape([len(length), len(factor)])
 
 #posible_increment = np.sqrt(omega_0**2 + factor*K1/(density*A)) / np.sqrt(omega_0**2)
@@ -219,7 +219,7 @@ for freq in f_0.T: plt.loglog(length, freq, '-')
 plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young])
 
 plt.figure()
-plt.title('Modelo complejo con Young {} GPa'.format(young[-1]/1e9))
+plt.title('Modelo complejo con Young {} GPa'.format(young[1]/1e9))
 plt.loglog(length, fits_data[:,0],'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
@@ -252,6 +252,38 @@ young_fit_error_2 = 2 * density * b_2[1] * (2 * np.exp(b_2[0]))**2
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young_fit_2, 
                                                         young_fit_error_2, 
                                                         units="Pa")))
+
+#%% 2D) FREQUENCY AND LENGTH
+# --> Try a nonlinear fit with complex model
+
+# Parameters
+density = 19300 # kg/m3
+G = 30e9 # Pa
+K1 = G * 2.75 # Pa
+diameter = 27e-9 # m
+# Why is this only lateral surface?
+
+# Data
+young = [45e9, 64e9, 78e9]
+factor = [0, .1, .2, .3, .4] # surface fraction that is inmerse
+
+# Theory models
+def simple_function(length, young):
+    f_0 = (np.sqrt(young/density) / (2 * length*1e-9)) * 1e-9
+    return f_0    
+
+def complex_function(length, young, factor):
+    A = np.pi * (diameter**2) / 4#  + np.pi * diameter * length # m2
+    f_0 = (np.sqrt(young/density) / (2 * length*1e-9)) * 1e-9
+    f = np.sqrt( (2*np.pi*f_0*1e9)**2 + factor*K1/(density * A) ) 
+    f = f * 1e-9/(2*np.pi)
+    return f
+
+# Mohsen initial values (64e9, .3)
+rsq_nl_c, parameters_nl_c = iva.nonLinearFit(
+        sem_data[:,2], 
+        fits_data[:,0],
+        complex_function)
 
 #%% 3) FREQUENCY VS Q AND WIDTH
 
