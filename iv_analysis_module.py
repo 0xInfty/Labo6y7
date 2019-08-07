@@ -262,7 +262,8 @@ def linearFit(X, Y, dY=None, showplot=True,
 
 #%%
 
-def nonLinearFit(X, Y, fitfunction, initial_guess=None, dY=None, 
+def nonLinearFit(X, Y, fitfunction, initial_guess=None, 
+                 bounds=(-np.infty, np.infty), dY=None, 
                  showplot=True, plot_some_errors=(False, 20), 
                  **kwargs):
     """Applies nonlinear fit and returns parameters and Rsq. Plots it.
@@ -282,6 +283,10 @@ def nonLinearFit(X, Y, fitfunction, initial_guess=None, dY=None,
         float. Must return only 'Y' as np.array.
     initial_guess=None : list, optional
         A list containing a initial guess for each parameter.
+    bounds=(-np.infty, np.infty) : tuple, optional
+        A tuple containing bounds for each parameter; 
+        i.e. ([-np.inf,0],[np.inf,2]) sets the 1st free and the 2nd between 0 
+        and 2.
     dY : np-array, list, optional
         Dependent Y data's associated error.
     shoplot : bool
@@ -340,10 +345,12 @@ def nonLinearFit(X, Y, fitfunction, initial_guess=None, dY=None,
         W = 1/dY**2
     
     parameters, covariance = curve_fit(fitfunction, X, Y,
-                                       p0=initial_guess, sigma=W)  
+                                       p0=initial_guess, bounds=bounds, 
+                                       sigma=W)  
     rsq = sum( (Y - fitfunction(X, *parameters))**2 )
     rsq = rsq/sum( (Y - np.mean(Y))**2 )
     rsq = 1 - rsq
+    n = len(parameters)
 
     if showplot:
         
@@ -362,7 +369,6 @@ def nonLinearFit(X, Y, fitfunction, initial_guess=None, dY=None,
         plt.plot(X, fitfunction(X, *parameters), 'r-', zorder=100)        
         plt.legend(["Ajuste lineal ponderado","Datos"])
         
-        n = len(parameters)
         kwargs_list = ['text_position', 'par_units', 'par_string_scale', 
                        'par_error_digits', 'rsq_decimal_digits']
         kwargs_default = [(.02,'up'), ['' for i in range(n)], 
