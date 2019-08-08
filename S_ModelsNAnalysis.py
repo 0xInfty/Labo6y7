@@ -20,18 +20,17 @@ desired_frequency = 10 # in GHz
 minimum_frequency = 10
 
 # Path to a list of filenames and rods to analize
-"""
+
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_series = ['LIGO1_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
 name = 'LIGO1'
 """
-
 rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']
 sem_short_series = lambda series : series.split('_')[1]+' {}'
 name = 'M135'
-
+"""
 # Some function to manege filenames
 def filenameToSEMFilename(series, home=home):
     
@@ -70,7 +69,7 @@ def figsFilename(fig_name, series='', home=home):
 # Physics' Parameters
 density = 19.3e3 # kg/m3 for gold
 Shear = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
-diameter = 27e-9 # m for rods
+diameter = 27.7e-9 # m for rods
 midlength = 85e-9 # m for rods
 viscosity = 2e-3 # Pa.s for gold
 Young = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
@@ -302,14 +301,14 @@ plt.savefig(figsFilename('FyQvsRod', name), bbox_inches='tight')
 f_andrea, f_complex, f_vall = f_area_definer('circ')
 
 # Data
-young = [45e9, 64e9, 78e9]
-factor = [0, .1, .2, .3, .4] # fraction that represents bound
+young_predict = [64e9, 78e9]
+young_predict_select = 64e9
+factor_predict = [0, .1, .2] # fraction that represents bound
 
 # Theory predictions
-f_0 = np.array([f_simple(l, y) for l in length for y in young])
-f_0 = f_0.reshape([len(length), len(young)])
-f = np.array([f_andrea(l, young[-1], c) for l in length for c in factor])
-f = f.reshape([len(length), len(factor)])
+f_0 = np.array([f_simple(length, y) for y in young_predict]).T
+f = np.array([f_andrea(length, young_predict_select, c) 
+              for c in factor_predict]).T
 
 # Make a plot for the simpler model
 plt.figure()
@@ -320,7 +319,7 @@ plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
 for freq in f_0.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
-plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young])
+plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young_predict])
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
@@ -330,15 +329,32 @@ for l in ax.get_xticklabels():
     l.set_visible(False)
 del l
 
+# Save plot
+plt.savefig(figsFilename('Simple_Predict.png', name), bbox_inches='tight')
+
 # Make one too for the complex model
 plt.figure()
-plt.title('Modelo complejo con Young {} GPa'.format(young[-1]/1e9))
-plt.loglog(length*1e9, fits_data[:,0]*1e-9,'o')
+ax = plt.subplot()
+plt.title('Modelo complejo con Young {} GPa'.format(young_predict_select/1e9))
+plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
 for freq in f.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
-plt.legend(["Datos"] + ["Sumergido {:.0f}%".format(c*100) for c in factor])
+plt.legend(["Datos"] + ["Factor {:.0f}%".format(c*100) for c in factor_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+
+# Save plot
+plt.savefig(figsFilename('Complex_{}_GPa.png'.format(young_predict_select/1e9), 
+                         name), 
+            bbox_inches='tight')
 
 """LIGO1: Decidimos que esto no es necesario si hacemos ajustes"""
 
@@ -384,6 +400,27 @@ print(r"Módulo de Young: {}".format(ivu.errorValueLatex(
             units="Pa")))
 chi_squared['simple'] = sum( (f_mid(length, young['simple'][0]) - frequency)**2 ) 
 chi_squared['simple'] = chi_squared['simple'] / len(length)
+
+plt.figure()
+ax = plt.subplot()
+plt.title('Ajuste modelo simple')
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
+plt.legend(["Datos","Ajuste simple"])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+
+# Save plot
+plt.savefig(figsFilename('Simple_Fit.png', name), bbox_inches='tight')
+
 
 """LIGO1
 Módulo de Young: (78.0$\pm$3.2) GPa
@@ -443,6 +480,27 @@ for a in area_mode:
 
 del a, y, f, ch
 
+plt.figure()
+ax = plt.subplot()
+plt.title('Ajuste modelo K1')
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea']['circ'][0], 
+                                     factor['andrea']['circ'][0]), '-r')
+plt.legend(["Datos","Ajuste K1"])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+
+# Save plot
+plt.savefig(figsFilename('Andrea_Fit_Circ.png', name), bbox_inches='tight')
+
 """LIGO1
 
 Si las CI son (64e9, .2)... Usando área transversal circular...
@@ -486,6 +544,26 @@ for a in area_mode:
     chi_squared['complex'][a] = ch
 
 del a, y, ch
+
+plt.figure()
+ax = plt.subplot()
+plt.title('Ajuste modelo completo')
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.loglog(length*1e9, 1e-9*f_complex(length, young['complex']['circ'][0]), '-r')
+plt.legend(["Datos","Ajuste completo"])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+
+# Save plot
+plt.savefig(figsFilename('Complex_Fit_Circ.png', name), bbox_inches='tight')
 
 """LIGO1
 
@@ -543,6 +621,36 @@ Módulo de Young: (69.8$\pm$25.1) GPa
 Factor porcentual: (100.0$\pm$291.0)%
 Chi Squared: 1.1227733049602669e+18
 """
+
+#%% 2*) FREQUENCY AND LENGTH
+# --> Final
+
+plt.figure()
+ax = plt.subplot()
+plt.loglog(length*1e9, frequency*1e-9, 'o', label='Datos')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-k', 
+           label='Ajuste modelo simple')
+plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea']['circ'][0],
+                                     factor['andrea']['circ'][0]), '--c', 
+           label=r'Ajuste modelo K$_1$')
+plt.loglog(length*1e9, 1e-9*f_andrea(length, young['complex']['circ'][0]), '-r', 
+           label='Ajuste modelo completo')
+plt.loglog(length*1e9, 1e-9*f_simple(length, 64e9), '--k', 
+           label='Predicción 64 GPa')
+plt.legend()
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+
+# Save plot
+plt.savefig(figsFilename('Loglog.png', name), bbox_inches='tight')
 
 #%% 3) FREQUENCY VS Q AND WIDTH
 
@@ -720,13 +828,13 @@ for typ in ['simple', 'mid']:
 #%% *) EXTRA CODE
     
 ivu.copy(ivu.errorValueLatex(np.mean(sem_data[:,0]),
-                             max(np.mean(sem_data[:,1]), np.std(sem_data[:,1])),
+                             max(np.mean(sem_data[:,1]), np.std(sem_data[:,0])),
                              units='nm'))
 
 ivu.copy(ivu.errorValueLatex(np.mean(fits_data[:,2]),
                              np.std(fits_data[:,2]),
                              units='GHz'))
 
-ivu.copy(ivu.errorValueLatex(np.mean(params[:,3]),
-                             np.std(params[:,3]),
-                             units='nm'))
+ivu.copy(ivu.errorValueLatex(np.mean(params[:,1]),
+                             np.std(params[:,1]),
+                             units='$\mu$W'))
