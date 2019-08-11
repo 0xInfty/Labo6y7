@@ -20,7 +20,7 @@ desired_frequency = 10 # in GHz
 minimum_frequency = 10
 
 # Path to a list of filenames and rods to analize
-
+"""
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_series = ['LIGO1_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
@@ -30,7 +30,7 @@ rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']
 sem_short_series = lambda series : series.split('_')[1]+' {}'
 name = 'M135'
-"""
+
 # Some function to manege filenames
 def filenameToSEMFilename(series, home=home):
     
@@ -330,7 +330,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Simple_Predict.png', name), bbox_inches='tight')
+plt.savefig(figsFilename('Simple_Predict', name), bbox_inches='tight')
 
 # Make one too for the complex model
 plt.figure()
@@ -352,7 +352,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Complex_{}_GPa.png'.format(young_predict_select/1e9), 
+plt.savefig(figsFilename('Complex_{}_GPa'.format(young_predict_select/1e9), 
                          name), 
             bbox_inches='tight')
 
@@ -419,7 +419,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Simple_Fit.png', name), bbox_inches='tight')
+plt.savefig(figsFilename('Simple_Fit', name), bbox_inches='tight')
 
 
 """LIGO1
@@ -499,7 +499,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Andrea_Fit_Circ.png', name), bbox_inches='tight')
+plt.savefig(figsFilename('Andrea_Fit_Circ', name), bbox_inches='tight')
 
 """LIGO1
 
@@ -563,7 +563,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Complex_Fit_Circ.png', name), bbox_inches='tight')
+plt.savefig(figsFilename('Complex_Fit_Circ', name), bbox_inches='tight')
 
 """LIGO1
 
@@ -637,8 +637,6 @@ plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea']['circ'][0],
            label=r'Ajuste modelo K$_1$')
 plt.loglog(length*1e9, 1e-9*f_andrea(length, young['complex']['circ'][0]), '-r', 
            label='Ajuste modelo completo')
-plt.loglog(length*1e9, 1e-9*f_simple(length, 64e9), '--k', 
-           label='Predicción 64 GPa')
 plt.legend()
 ax.minorticks_on()
 ax.tick_params(axis='y')
@@ -650,7 +648,7 @@ for l in ax.get_xticklabels():
 del l
 
 # Save plot
-plt.savefig(figsFilename('Loglog.png', name), bbox_inches='tight')
+plt.savefig(figsFilename('Loglog', name), bbox_inches='tight')
 
 #%% 3) FREQUENCY VS Q AND WIDTH
 
