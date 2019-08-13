@@ -15,12 +15,11 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
+home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 desired_frequency = 10 # in GHz
-minimum_frequency = 10
 
 # Path to a list of filenames and rods to analize
-"""
+
 rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
 sem_series = ['LIGO1_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
@@ -30,7 +29,7 @@ rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']
 sem_short_series = lambda series : series.split('_')[1]+' {}'
 name = 'M135'
-
+"""
 # Some function to manege filenames
 def filenameToSEMFilename(series, home=home):
     
@@ -71,17 +70,17 @@ density = 19.3e3 # kg/m3 for gold
 Shear = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
 diameter = 27.7e-9 # m for rods
 midlength = 85e-9 # m for rods
-viscosity = 2e-3 # Pa.s for gold
+Viscosity = 2e-3 # Pa/s for gold
 Young = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
 density_s = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
+area = np.pi * diameter**2 / 4
 K1 = Shear * 2.75 # Pa
-K2 = np.pi * diameter * np.sqrt(density_s * Shear)
+K2 = np.pi * diameter * np.sqrt(density_s * Shear) # Pa.s
 
 # Space to save results
 young = {}
 factor = {}
 chi_squared = {}
-area_mode = ['circ', 'rect']
 
 # Theory models
 def f_simple(length, young):
@@ -90,42 +89,35 @@ def f_simple(length, young):
 
 def f_mid(length, young):
     f_0 = f_simple(length, young)
-    beta = ( viscosity / (length * density) )**2 / 2
+    beta = ( Viscosity / (length * density) )**2 / 2
     f = np.sqrt(f_0**2 - beta**2 / 4)
     return f
 
-def f_area_definer(mode):
+def f_andrea(length, young, factor):
+    f_0 = f_simple(length, young)
+    f = np.sqrt( (2*np.pi*f_0)**2 + factor*K1/(density*area) ) 
+    f = f /(2*np.pi)
+    return f
 
-    if mode=='rect':
-        area = np.pi * diameter * midlength
-    elif mode=='circ':
-        area = np.pi * (diameter**2) / 4
-    else:
-        raise ValueError("Wrong key!")
+def f_complex(length, young):
+    f_0 = f_simple(length, young)
+    beta = ( Viscosity / (length * density) )**2 / 2
+    K1_term = K1 / ( np.pi**2 * density * area )
+    K2_subterm = K2 / ( 2 * np.pi * density * area )
+    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+    return f
 
-    def f_andrea(length, young, factor=1):
-        f_0 = f_simple(length, young)
-        f = np.sqrt( (2*np.pi*f_0)**2 + factor*K1/(density*area) ) 
-        f = f /(2*np.pi)
-        return f
+def f_iv(length, young, factor):
+    f_0 = f_simple(length, young)
+    beta = ( Viscosity / (length * density) )**2 / 2
+    K1_term = factor * K1 / ( np.pi**2 * density * area )
+    K2_subterm = factor * K2 / ( 2 * np.pi * density * area )
+    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+    return f
 
-    def f_complex(length, young):
-        f_0 = f_simple(length, young)
-        beta = ( viscosity / (length * density) )**2 / 2
-        K1_term = K1 / ( np.pi**2 * density * area )
-        K2_subterm = K2 / ( 2 * np.pi * density * area )
-        f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta)**2/4 )
-        return f
-    
-    def f_vall(length, young, factor=1):
-        f_0 = f_simple(length, young)
-        beta = ( viscosity / (length * density) )**2 / 2
-        K1_term = K1 / ( np.pi**2 * density * factor * area )
-        K2_subterm = K2 / ( 2 * np.pi * density * factor * area )
-        f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta)**2/4 )
-        return f
-
-    return f_andrea, f_complex, f_vall
+def tau_simple(length, viscosity):
+    tau = 2 * (length * density / (np.pi * viscosity))**2
+    return tau
 
 #%% LOAD DATA -----------------------------------------------------------------
 
@@ -188,7 +180,7 @@ for rod, fit in zip(rods, fits_data):
         fits_new_data.append([*fit])
 fits_data = np.array(fits_new_data)
 frequency = fits_data[:,0]*1e9 # Hz
-damping_time = fits_data[:,1]*1e12 # s
+damping_time = fits_data[:,1]*1e-12 # s
 quality_factor = fits_data[:,2]
 del rod, fit, i, fits_new_data
 
@@ -255,13 +247,15 @@ del heading, items
 
 # Save all important data to a single file
 whole_filename = os.path.join(home, r'Análisis/Resultados_Totales_{}.txt'.format(name))
-whole_data = np.array([*sem_data[:,:6].T, fits_data[:,0], fits_data[:,2]])
+whole_data = np.array([*sem_data[:,:6].T, fits_data[:,0], 
+                       fits_data[:,1], fits_data[:,2]])
 ivs.saveTxt(whole_filename, whole_data.T, 
             header=["Ancho (nm)", "Error (nm)",
                     "Longitud (nm)", "Error (nm)", 
                     "Relación de aspecto", "Error",
-                    "Frecuencia (GHz)", "Factor de calidad"],
-            footer=dict(rods=rods),
+                    "Frecuencia (GHz)", "Tiempo de decaimiento (ps)",
+                    "Factor de calidad"],
+            footer=dict(rods=rods, filenames=filenames),
             overwrite=True)
 
 #%% ANALYSIS ------------------------------------------------------------------
@@ -298,17 +292,18 @@ plt.savefig(figsFilename('FyQvsRod', name), bbox_inches='tight')
 #%% 2A) FREQUENCY AND LENGTH
 # --> Try out some known values
 
-f_andrea, f_complex, f_vall = f_area_definer('circ')
-
 # Data
-young_predict = [64e9, 78e9]
+young_predict = [64e9, 78e9, 42e9]
 young_predict_select = 64e9
-factor_predict = [0, .1, .2] # fraction that represents bound
+factor_predict = [0, .1, .2, 1] # fraction that represents bound
 
 # Theory predictions
 f_0 = np.array([f_simple(length, y) for y in young_predict]).T
-f = np.array([f_andrea(length, young_predict_select, c) 
-              for c in factor_predict]).T
+f_c = np.array([f_complex(length, y) for y in young_predict]).T
+f_a = np.array([f_andrea(length, young_predict_select, c) 
+                for c in factor_predict]).T
+f_ivc = np.array([f_iv(length, young_predict_select, c) 
+                 for c in factor_predict]).T
 
 # Make a plot for the simpler model
 plt.figure()
@@ -325,21 +320,37 @@ ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
 plt.savefig(figsFilename('Simple_Predict', name), bbox_inches='tight')
 
-# Make one too for the complex model
+# Make a plot for the complex model
 plt.figure()
 ax = plt.subplot()
-plt.title('Modelo complejo con Young {} GPa'.format(young_predict_select/1e9))
+plt.title('Modelo completo')
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-for freq in f.T: plt.loglog(length*1e9, freq*1e-9, '-')
+for freq in f_c.T: plt.loglog(length*1e9, freq*1e-9, '-')
+del freq
+plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.savefig(figsFilename('Complex_Predict', name), bbox_inches='tight')
+
+# Make one too for the Andrea model
+plt.figure()
+ax = plt.subplot()
+plt.title('Modelo Andrea con Young {} GPa'.format(young_predict_select/1e9))
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+for freq in f_a.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
 plt.legend(["Datos"] + ["Factor {:.0f}%".format(c*100) for c in factor_predict])
 ax.minorticks_on()
@@ -347,15 +358,33 @@ ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
-plt.savefig(figsFilename('Complex_{}_GPa'.format(young_predict_select/1e9), 
+plt.savefig(figsFilename('Andrea_{}_GPa'.format(young_predict_select/1e9), 
                          name), 
             bbox_inches='tight')
 
+# Make one too for the IV model
+plt.figure()
+ax = plt.subplot()
+plt.title('Modelo complejo con Young {} GPa'.format(young_predict_select/1e9))
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+for freq in f_ivc.T: plt.loglog(length*1e9, freq*1e-9, '-')
+del freq
+plt.legend(["Datos"] + ["Factor {:.0f}%".format(c*100) for c in factor_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.savefig(figsFilename('IV_{}_GPa'.format(young_predict_select/1e9), 
+                         name), 
+            bbox_inches='tight')
+    
 """LIGO1: Decidimos que esto no es necesario si hacemos ajustes"""
 
 #%% 2B) FREQUENCY AND LENGTH
@@ -404,29 +433,19 @@ chi_squared['simple'] = chi_squared['simple'] / len(length)
 plt.figure()
 ax = plt.subplot()
 plt.title('Ajuste modelo simple')
-plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.plot(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
+plt.plot(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
 plt.legend(["Datos","Ajuste simple"])
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
 plt.savefig(figsFilename('Simple_Fit', name), bbox_inches='tight')
-
-
-"""LIGO1
-Módulo de Young: (78.0$\pm$3.2) GPa
-Chi Squared: 1.0990569627612585e+18
-Hermoso. Absolutamente hermoso :)
-"""
 
 #%% 2E) FREQUENCY AND LENGTH
 # --> Try a nonlinear fit directly using the mid model
@@ -440,13 +459,6 @@ print(r"Módulo de Young: {}".format(ivu.errorValueLatex(
 chi_squared['mid'] = sum( (f_mid(length, young['mid'][0]) - frequency)**2 ) 
 chi_squared['mid'] = chi_squared['mid'] / len(length)
 
-"""LIGO1
-Módulo de Young: (78.0$\pm$3.2) GPa
-Chi Squared 1.0517810075757833e+18
-Como la viscosidad del oro es muy pequeña y las escalas de longitud 
-son nanométricas, el término beta se puede despreciar frente a la frecuencia 
-omega_0. El máximo al que llega beta**2/4 es 20 órdenes menor al de f_0**2.
-"""
 #%% 2F) FREQUENCY AND LENGTH
 # --> Try a nonlinear fit using the Andrea model directly
 
@@ -454,52 +466,43 @@ young['andrea'] = {}
 factor['andrea'] = {}
 chi_squared['andrea'] = {}
 
-for a in area_mode:
+initial_guess = (64e9, .2)
+rsq, parameters = iva.nonLinearFit(length, frequency, f_andrea, 
+                                   initial_guess=initial_guess, 
+                                   bounds=([1e9,0], [np.infty, 1]), 
+                                   showplot=False)
+young['andrea'] = parameters[0]
+factor['andrea'] = parameters[1]
+print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['andrea'][0], 
+                                                        young['andrea'][1], 
+                                                        units="Pa")))
+print(r"Factor porcentual: {}%".format(ivu.errorValueLatex(
+        factor['andrea'][0]*100,
+        factor['andrea'][1]*100)))
 
-    f_andrea, f_complex, f_vall = f_area_definer(a)
-    
-    initial_guess = (Young, .2)
-    rsq, parameters = iva.nonLinearFit(length, frequency, f_andrea, 
-                                       initial_guess=initial_guess, 
-                                       bounds=([1e9,0], [np.infty, 1]), 
-                                       showplot=False)
-    y = parameters[0]
-    f = parameters[1]
-    print(r"Módulo de Young: {}".format(ivu.errorValueLatex(y[0], 
-                                                            y[1], 
-                                                            units="Pa")))
-    print(r"Factor porcentual: {}%".format(ivu.errorValueLatex(f[0]*100,
-                                                               f[1]*100)))
-    
-    ch = sum( (f_andrea(length, y[0], f[0]) - frequency)**2 ) 
-    ch = ch / len(length)
-
-    young['andrea'][a] = y
-    factor['andrea'][a] = f
-    chi_squared['andrea'][a] = ch
-
-del a, y, f, ch
+chi_squared['andrea'] = sum( (f_andrea(length, 
+                                       young['andrea'][0], 
+                                       factor['andrea'][0]) 
+                            - frequency)**2 ) 
+chi_squared['andrea'] = chi_squared['andrea'] / len(length)
 
 plt.figure()
 ax = plt.subplot()
 plt.title('Ajuste modelo K1')
-plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.plot(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea']['circ'][0], 
-                                     factor['andrea']['circ'][0]), '-r')
+plt.plot(length*1e9, 1e-9*f_andrea(length, young['andrea'][0], 
+                                     factor['andrea'][0]), '-r')
 plt.legend(["Datos","Ajuste K1"])
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
-plt.savefig(figsFilename('Andrea_Fit_Circ', name), bbox_inches='tight')
+plt.savefig(figsFilename('Andrea_Fit', name), bbox_inches='tight')
 
 """LIGO1
 
@@ -521,106 +524,78 @@ Todo indica que el algoritmo quiere bajar lo más que puede el factor.
 
 young['complex'] = {}
 chi_squared['complex'] = {}
+ 
+rsq, y = iva.nonLinearFit(length, frequency, f_complex, 
+                          bounds=([1e9], [np.infty]), 
+                          showplot=False)
+young['complex'] = parameters[0]
+print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['complex'][0], 
+                                                        young['complex'][1], 
+                                                        units="Pa")))
 
-for a in area_mode:
-
-    f_andrea, f_complex, f_vall = f_area_definer(a)
-
-    
-    initial_guess = (Young)
-    rsq, y = iva.nonLinearFit(length, frequency, f_complex, 
-                              initial_guess=initial_guess, 
-                              bounds=([1e9], [np.infty]), 
-                              showplot=False)
-    y = parameters[0]
-    print(r"Módulo de Young: {}".format(ivu.errorValueLatex(y[0], 
-                                                            y[1], 
-                                                            units="Pa")))
-    
-    ch = sum( (f_complex(length, y[0]) - frequency)**2 ) 
-    ch = ch / len(length)
-
-    young['complex'][a] = y
-    chi_squared['complex'][a] = ch
-
-del a, y, ch
+chi_squared['complex'] = sum( (f_complex(length, young['complex'][0]) 
+                               - frequency)**2 ) 
+chi_squared['complex'] = chi_squared['complex'] / len(length)
 
 plt.figure()
 ax = plt.subplot()
 plt.title('Ajuste modelo completo')
-plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.plot(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.loglog(length*1e9, 1e-9*f_complex(length, young['complex']['circ'][0]), '-r')
+plt.plot(length*1e9, 1e-9*f_complex(length, young['complex'][0]), '-r')
 plt.legend(["Datos","Ajuste completo"])
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
-plt.savefig(figsFilename('Complex_Fit_Circ', name), bbox_inches='tight')
-
-"""LIGO1
-
-Usando área transversal circular...
-Módulo de Young: (78.4$\pm$24.1) GPa
-Chi Squared: 3.5884968302104535e+19
-
-Usando área transversal rectangular...
-Módulo de Young: (78.4$\pm$24.1) GPa
-Chi Squared: 1.527528834987675e+18
-"""
+plt.savefig(figsFilename('Complex_Fit', name), bbox_inches='tight')
 
 #%% 2H) FREQUENCY AND LENGTH
 # --> Try a nonlinear fit directly using the complex model with free factor
 
-young['vall'] = {}
-factor['vall'] = {}
-chi_squared['vall'] = {}
-
-for a in area_mode:
-
-    f_andrea, f_complex, f_vall = f_area_definer(a)
+young['iv'] = {}
+factor['iv'] = {}
+chi_squared['iv'] = {}
     
-    initial_guess = (Young, .2)
-    rsq, parameters = iva.nonLinearFit(length, frequency, f_vall, 
-                                       initial_guess=initial_guess, 
-                                       bounds=([1e9,0], [np.infty, 1]), 
-                                       showplot=False)
-    y = parameters[0]
-    f = parameters[1]
-    print(r"Módulo de Young: {}".format(ivu.errorValueLatex(y[0], 
-                                                            y[1], 
-                                                            units="Pa")))
-    print(r"Factor porcentual: {}%".format(ivu.errorValueLatex(f[0]*100,
-                                                               f[1]*100)))
-    
-    ch = sum( (f_vall(length, y[0], f[0]) - frequency)**2 ) 
-    ch = ch / len(length)
+initial_guess = (64e9, .2)
+rsq, parameters = iva.nonLinearFit(length, frequency, f_iv, 
+                                   initial_guess=initial_guess, 
+                                   bounds=([1e9,0], [np.infty, 1]), 
+                                   showplot=False)
+young['iv'] = parameters[0]
+factor['iv'] = parameters[1]
+print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['iv'][0], 
+                                                        young['iv'][1], 
+                                                        units="Pa")))
+print(r"Factor porcentual: {}%".format(ivu.errorValueLatex(
+        factor['iv'][0]*100,
+        factor['iv'][1]*100)))
 
-    young['vall'][a] = y
-    factor['vall'][a] = f
-    chi_squared['vall'][a] = ch
+chi_squared['iv'] = sum( (f_iv(length, young['iv'][0], young['iv'][0]) 
+                          - frequency)**2 ) 
+chi_squared['iv'] = chi_squared['iv'] / len(length)
   
-del a, y, f, ch
-    
-"""LIGO1
+plt.figure()
+ax = plt.subplot()
+plt.title('Ajuste modelo IV')
+plt.plot(length*1e9, frequency*1e-9,'o')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.plot(length*1e9, 1e-9*f_andrea(length, young['iv'][0], 
+                                     factor['iv'][0]), '-r')
+plt.legend(["Datos","Ajuste IV"])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
 
-Si las CI son (Young, 1)... Usando el área transversal circular...
-Módulo de Young: (73.0$\pm$139.0) GPa
-Factor porcentual: (14.2$\pm$3.1)%
-Chi Squared: 1.8031943401351125e+19
-
-Usando área transversal rectangular...
-Módulo de Young: (69.8$\pm$25.1) GPa
-Factor porcentual: (100.0$\pm$291.0)%
-Chi Squared: 1.1227733049602669e+18
-"""
+# Save plot
+plt.savefig(figsFilename('IV_Fit', name), bbox_inches='tight')
 
 #%% 2*) FREQUENCY AND LENGTH
 # --> Final
@@ -632,10 +607,10 @@ plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
 plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-k', 
            label='Ajuste modelo simple')
-plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea']['circ'][0],
-                                     factor['andrea']['circ'][0]), '--c', 
+plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea'][0],
+                                     factor['andrea'][0]), '--c', 
            label=r'Ajuste modelo K$_1$')
-plt.loglog(length*1e9, 1e-9*f_andrea(length, young['complex']['circ'][0]), '-r', 
+plt.loglog(length*1e9, 1e-9*f_andrea(length, young['complex'][0]), '-r', 
            label='Ajuste modelo completo')
 plt.legend()
 ax.minorticks_on()
@@ -643,9 +618,6 @@ ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
 plt.show()
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
 plt.savefig(figsFilename('Loglog', name), bbox_inches='tight')
@@ -705,6 +677,28 @@ plt.savefig(figsFilename('TauvsLyW', name), bbox_inches='tight')
 """LIGO1: El tiempo de decaimiento a lo sumo decae con ambas. Pero el modelo 
 predice que aumenta con L**2 Oo"""
 
+#%% 5) DAMPING TIME VS LENGTH
+
+# Fit
+viscosity = iva.nonLinearFit(length, damping_time, tau_simple, 
+                             showplot=False)[1][0]
+
+# Plot
+plt.figure()
+ax = plt.subplot()
+plt.plot(length, damping_time, '.')
+plt.plot(length, tau_simple(length, viscosity[0]), '-r')
+plt.xlabel('Longitud $L$ (m)')
+plt.ylabel(r'Tiempo de decaimiento $\tau$ (s)')
+plt.title(r'Ajuste')
+plt.legend(['Datos', 'Ajuste'])
+plt.grid(axis='x')
+
+print(r"Viscosidad: {}".format(ivu.errorValueLatex(
+    viscosity[0], 
+    viscosity[1], 
+    units="Pa.s")))
+
 #%% *) HISTOGRAMS
 
 fig = plt.figure()
@@ -722,9 +716,6 @@ plt.ylabel("Repeticiones")
 ax = plt.subplot(grid[0,1])
 bins_limits = ax.hist(fits_data[:,0])[1]
 plt.xlabel("Frecuencia (GHz)")
-for l in ax.get_yticklabels():
-    l.set_visible(False)
-del l
 
 # Save plot
 plt.savefig(figsFilename('Hists', name), bbox_inches='tight')
@@ -772,9 +763,6 @@ ax = plt.subplot(grid[1,0])
 ax.boxplot(fits_data[:,2], showmeans=True, meanline=True, 
            meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
            medianprops={'color':'r', 'linewidth':2})
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
 plt.ylabel("Factor de calidad")
 ax.tick_params(axis='y', direction='in')
 
@@ -806,21 +794,15 @@ plt.ylabel("Ancho de la campana (Hz)")
 
 #%% *) EXTRA CODE
 
-for typ in ['andrea','complex','vall']:
-    for a in ['circ', 'rect']:
-        young[typ][a] = ivu.errorValueLatex(young[typ][a][0], 
-                                            young[typ][a][1], 
-                                            units="Pa")
-        try:
-            factor[typ][a] = ivu.errorValueLatex(factor[typ][a][0]*100, 
-                                                 factor[typ][a][1]*100)
-        except:
-            a
-        chi_squared[typ][a] = '{:.2e}'.format(chi_squared[typ][a])
-for typ in ['simple', 'mid']:
+for typ in ['simple', 'mid', 'andrea', 'complex', 'iv']:
     young[typ] = ivu.errorValueLatex(young[typ][0], 
                                      young[typ][1], 
                                      units="Pa")
+    try:
+        factor[typ] = ivu.errorValueLatex(factor[typ][0]*100, 
+                                             factor[typ][1]*100)
+    except:
+        typ
     chi_squared[typ] = '{:.2E}'.format(chi_squared[typ])
 
 #%% *) EXTRA CODE
