@@ -298,11 +298,11 @@ young_predict_select = 64e9
 factor_predict = [0, .1, .2, 1] # fraction that represents bound
 
 # Theory predictions
-f_0 = np.array([f_simple(length, y) for y in young_predict]).T
-f_c = np.array([f_complex(length, y) for y in young_predict]).T
-f_a = np.array([f_andrea(length, young_predict_select, c) 
+freq_simple = np.array([f_simple(length, y) for y in young_predict]).T
+freq_complex = np.array([f_complex(length, y) for y in young_predict]).T
+freq_andrea = np.array([f_andrea(length, young_predict_select, c) 
                 for c in factor_predict]).T
-f_ivc = np.array([f_iv(length, young_predict_select, c) 
+freq_iv = np.array([f_iv(length, young_predict_select, c) 
                  for c in factor_predict]).T
 
 # Make a plot for the simpler model
@@ -312,7 +312,7 @@ plt.title('Modelo simple')
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-for freq in f_0.T: plt.loglog(length*1e9, freq*1e-9, '-')
+for freq in freq_simple.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
 plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young_predict])
 ax.minorticks_on()
@@ -331,7 +331,7 @@ plt.title('Modelo completo')
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-for freq in f_c.T: plt.loglog(length*1e9, freq*1e-9, '-')
+for freq in freq_complex.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
 plt.legend(["Datos"] + ["{} GPa".format(y/1e9) for y in young_predict])
 ax.minorticks_on()
@@ -350,7 +350,7 @@ plt.title('Modelo Andrea con Young {} GPa'.format(young_predict_select/1e9))
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-for freq in f_a.T: plt.loglog(length*1e9, freq*1e-9, '-')
+for freq in freq_andrea.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
 plt.legend(["Datos"] + ["Factor {:.0f}%".format(c*100) for c in factor_predict])
 ax.minorticks_on()
@@ -371,7 +371,7 @@ plt.title('Modelo IV con Young {} GPa'.format(young_predict_select/1e9))
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-for freq in f_ivc.T: plt.loglog(length*1e9, freq*1e-9, '-')
+for freq in freq_iv.T: plt.loglog(length*1e9, freq*1e-9, '-')
 del freq
 plt.legend(["Datos"] + ["Factor {:.0f}%".format(c*100) for c in factor_predict])
 ax.minorticks_on()
@@ -526,7 +526,7 @@ young['complex'] = {}
 chi_squared['complex'] = {}
  
 rsq, y = iva.nonLinearFit(length, frequency, f_complex, 
-                          bounds=([1e9], [np.infty]), 
+                          bounds=([0], [np.infty]), 
                           showplot=False)
 young['complex'] = parameters[0]
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['complex'][0], 
