@@ -367,7 +367,7 @@ plt.savefig(figsFilename('Andrea_{}_GPa'.format(young_predict_select/1e9),
 # Make one too for the IV model
 plt.figure()
 ax = plt.subplot()
-plt.title('Modelo complejo con Young {} GPa'.format(young_predict_select/1e9))
+plt.title('Modelo IV con Young {} GPa'.format(young_predict_select/1e9))
 plt.loglog(length*1e9, frequency*1e-9,'o')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
@@ -610,7 +610,7 @@ plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-k',
 plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea'][0],
                                      factor['andrea'][0]), '--c', 
            label=r'Ajuste modelo K$_1$')
-plt.loglog(length*1e9, 1e-9*f_andrea(length, young['complex'][0]), '-r', 
+plt.loglog(length*1e9, 1e-9*f_complex(length, young['complex'][0]), '-r', 
            label='Ajuste modelo completo')
 plt.legend()
 ax.minorticks_on()
