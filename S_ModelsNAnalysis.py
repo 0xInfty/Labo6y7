@@ -107,6 +107,14 @@ def f_complex(length, young):
     f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
     return f
 
+def f_complex_free(length, young, K1, K2):
+    f_0 = f_simple(length, young)
+    beta = ( Viscosity / (length * density) )**2 / 2
+    K1_term = K1 / ( np.pi**2 * density * area )
+    K2_subterm = K2 / ( 2 * np.pi * density * area )
+    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+    return f
+
 def f_iv(length, young, factor):
     f_0 = f_simple(length, young)
     beta = ( Viscosity / (length * density) )**2 / 2
@@ -232,7 +240,7 @@ for i in range(len(rods)):
     items.append('\t'.join([h, ra, 
                             "{:.2f}".format(fits_data[i,0]), 
                              "{:.1f}".format(fits_data[i,2])]))
-del h, ra
+del i, h, ra
 
 # Make OneNote table
 heading = '\t'.join(["Longitud (nm)", "Error (nm)", 
@@ -293,7 +301,7 @@ plt.savefig(figsFilename('FyQvsRod', name), bbox_inches='tight')
 # --> Try out some known values
 
 # Data
-young_predict = [64e9, 78e9, 42e9]
+young_predict = [0, 64e9, 78e9, 42e9]
 young_predict_select = 64e9
 factor_predict = [0, .1, .2, 1] # fraction that represents bound
 
@@ -473,6 +481,7 @@ rsq, parameters = iva.nonLinearFit(length, frequency, f_andrea,
                                    showplot=False)
 young['andrea'] = parameters[0]
 factor['andrea'] = parameters[1]
+del parameters
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['andrea'][0], 
                                                         young['andrea'][1], 
                                                         units="Pa")))
@@ -528,7 +537,8 @@ chi_squared['complex'] = {}
 rsq, y = iva.nonLinearFit(length, frequency, f_complex, 
                           bounds=([0], [np.infty]), 
                           showplot=False)
-young['complex'] = parameters[0]
+young['complex'] = y[0]
+del y
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['complex'][0], 
                                                         young['complex'][1], 
                                                         units="Pa")))
