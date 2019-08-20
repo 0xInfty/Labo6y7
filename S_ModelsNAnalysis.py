@@ -79,6 +79,8 @@ K2 = np.pi * diameter * np.sqrt(density_s * Shear) # Pa.s
 
 # Space to save results
 young = {}
+#k1 = {}
+#k2 = {}
 factor = {}
 chi_squared = {}
 
@@ -107,13 +109,13 @@ def f_complex(length, young):
     f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
     return f
 
-def f_complex_free(length, young, K1, K2):
-    f_0 = f_simple(length, young)
-    beta = ( Viscosity / (length * density) )**2 / 2
-    K1_term = K1 / ( np.pi**2 * density * area )
-    K2_subterm = K2 / ( 2 * np.pi * density * area )
-    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
-    return f
+#def f_free(length, young, K1, K2):
+#    f_0 = f_simple(length, young)
+#    beta = ( Viscosity / (length * density) )**2 / 2
+#    K1_term = K1 / ( np.pi**2 * density * area )
+#    K2_subterm = K2 / ( 2 * np.pi * density * area )
+#    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+#    return f
 
 def f_iv(length, young, factor):
     f_0 = f_simple(length, young)
@@ -578,6 +580,7 @@ rsq, parameters = iva.nonLinearFit(length, frequency, f_iv,
                                    showplot=False)
 young['iv'] = parameters[0]
 factor['iv'] = parameters[1]
+del parameters
 print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['iv'][0], 
                                                         young['iv'][1], 
                                                         units="Pa")))
@@ -607,6 +610,41 @@ plt.show()
 # Save plot
 plt.savefig(figsFilename('IV_Fit', name), bbox_inches='tight')
 
+#%% 2I) FREQUENCY AND LENGTH
+# --> Try a nonlinear fit using the complex model with free K1, K2, Young
+
+#rsq, parameters = iva.nonLinearFit(length, frequency, f_free, 
+#                                   initial_guess=(Young, K1, K2),
+#                                   showplot=False)
+#young['free'] = parameters[0]
+#k1['free'] = parameters[1]
+#k2['free'] = parameters[2]
+#del parameters
+#print(r"Módulo de Young: {}".format(ivu.errorValueLatex(young['free'][0], 
+#                                                        young['free'][1], 
+#                                                        units="Pa")))
+#
+#chi_squared['free'] = sum( (f_free(length, young['free'][0], k1['free'][0], k2['free'][0]) 
+#                               - frequency)**2 ) 
+#chi_squared['free'] = chi_squared['free'] / len(length)
+#
+#plt.figure()
+#ax = plt.subplot()
+#plt.title('Ajuste modelo completo libre')
+#plt.plot(length*1e9, frequency*1e-9,'o')
+#plt.ylabel('Frecuencia (GHz)')
+#plt.xlabel('Longitud (nm)')
+#plt.plot(length*1e9, 1e-9*f_free(length, young['free'][0], k1['free'][0], k2['free'][0]), '-r')
+#plt.legend(["Datos","Ajuste completo"])
+#ax.minorticks_on()
+#ax.tick_params(axis='y')
+#ax.tick_params(axis='y', which='minor', length=0)
+#ax.grid(axis='both', which='both')
+#plt.show()
+#
+## Save plot
+#plt.savefig(figsFilename('Free_Fit', name), bbox_inches='tight')
+
 #%% 2*) FREQUENCY AND LENGTH
 # --> Final
 
@@ -619,9 +657,11 @@ plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-k',
            label='Ajuste modelo simple')
 plt.loglog(length*1e9, 1e-9*f_andrea(length, young['andrea'][0],
                                      factor['andrea'][0]), '--c', 
-           label=r'Ajuste modelo K$_1$')
+           label=r'Ajuste modelo completo aproximado')
 plt.loglog(length*1e9, 1e-9*f_complex(length, young['complex'][0]), '-r', 
            label='Ajuste modelo completo')
+plt.loglog(length*1e9, 1e-9*f_iv(length, young['iv'][0], factor['iv'][0]), '-g', 
+           label=r'Ajuste modelo completo con factor')
 plt.legend()
 ax.minorticks_on()
 ax.tick_params(axis='y')
@@ -631,6 +671,31 @@ plt.show()
 
 # Save plot
 plt.savefig(figsFilename('Loglog', name), bbox_inches='tight')
+
+
+plt.figure()
+ax = plt.subplot()
+plt.plot(length*1e9, frequency*1e-9, 'o', label='Datos')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.plot(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-k', 
+           label='Ajuste modelo simple')
+plt.plot(length*1e9, 1e-9*f_complex(length, young['complex'][0]), '-r', 
+           label='Ajuste modelo completo')
+plt.plot(length*1e9, 1e-9*f_andrea(length, young['andrea'][0],
+                                     factor['andrea'][0]), '--c', 
+           label=r'Ajuste modelo completo aproximado')
+plt.plot(length*1e9, 1e-9*f_iv(length, young['iv'][0], factor['iv'][0]), ':r', 
+           label=r'Ajuste modelo completo con factor')
+plt.legend()
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.savefig(figsFilename('FitsFinal', name), bbox_inches='tight')
 
 #%% 3) FREQUENCY VS Q AND WIDTH
 
