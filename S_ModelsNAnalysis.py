@@ -233,6 +233,15 @@ length = sem_data[:,2] * 1e-9 # m
 width = sem_data[:,0] * 1e-9 # m
 del other_data, index, sem_rods
 
+# Now we can filter the results
+index = np.argsort(frequency) # Remove the two lowest frequencies
+length = length[index[2:]]
+width = width[index[2:]]
+frequency = frequency[index[2:]]
+damping_time = damping_time[index[2:]]
+quality_factor = quality_factor[index[2:]]
+del index
+
 # Since I'll be analysing frequency vs length mostly...
 index = np.argsort(length)
 length = length[index]
@@ -277,10 +286,11 @@ ivs.saveTxt(whole_filename, whole_data.T,
                     "Factor de calidad"],
             footer=dict(rods=rods, filenames=filenames),
             overwrite=True)
+del whole_data, whole_filename
 
 #%% ANALYSIS ------------------------------------------------------------------
 
-#%% 1) FREQUENCY AND QUALITY FACTOR PER ROD
+#%% 1A) FREQUENCY AND QUALITY FACTOR PER ROD
 
 # Plot results for the different rods
 fig, ax1 = plt.subplots()
@@ -308,6 +318,64 @@ ax1.tick_params(axis='x', labelrotation=90)
 
 # Save plot
 plt.savefig(figsFilename('FyQvsRod', name), bbox_inches='tight')
+
+#%% 1B) FREQUENCY AND LENGTH PER ROD
+
+# Plot results for the different rods
+fig, ax1 = plt.subplots()
+
+# Frequency plot, right axis
+ax1.set_xlabel('Antena')
+ax1.set_ylabel('Frecuencia (GHz)', color='tab:red')
+ax1.plot(fits_data[:,0], 'ro')
+ax1.tick_params(axis='y', labelcolor='tab:red')
+
+# Quality factor, left axis
+ax2 = ax1.twinx()  # Second axes that shares the same x-axis
+ax2.set_ylabel('Longitud (nm)', color='tab:blue')
+ax2.plot(sem_data[:,2], 'bx')
+ax2.tick_params(axis='y', labelcolor='tab:blue')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+
+# Format graph
+plt.xticks(np.arange(len(rods)), rods, rotation='vertical')
+plt.grid(which='both', axis='x')
+ax1.tick_params(length=2)
+ax1.grid(axis='x', which='both')
+ax1.tick_params(axis='x', labelrotation=90)
+
+# Save plot
+plt.savefig(figsFilename('FyLvsRod', name), bbox_inches='tight')
+
+#%% 1C) LENGTH AND WIDTH PER ROD
+
+# Plot results for the different rods
+fig, ax1 = plt.subplots()
+
+# Frequency plot, right axis
+ax1.set_xlabel('Antena')
+ax1.set_ylabel('Longitud (nm)', color='tab:red')
+ax1.plot(sem_data[:,2], 'ro')
+ax1.tick_params(axis='y', labelcolor='tab:red')
+
+# Quality factor, left axis
+ax2 = ax1.twinx()  # Second axes that shares the same x-axis
+ax2.set_ylabel('Ancho (nm)', color='tab:blue')
+ax2.plot(sem_data[:,0], 'bx')
+ax2.tick_params(axis='y', labelcolor='tab:blue')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+
+# Format graph
+plt.xticks(np.arange(len(rods)), rods, rotation='vertical')
+plt.grid(which='both', axis='x')
+ax1.tick_params(length=2)
+ax1.grid(axis='x', which='both')
+ax1.tick_params(axis='x', labelrotation=90)
+
+# Save plot
+plt.savefig(figsFilename('LyAvsRod', name), bbox_inches='tight')
 
 #%% 2A) FREQUENCY AND LENGTH
 # --> Try out some known values
@@ -428,6 +496,9 @@ plt.savefig(figsFilename('Full_0_GPa', name),
             bbox_inches='tight')
 
 """LIGO1: Decidimos que esto no es necesario si hacemos ajustes"""
+
+del young_predict, factor_predict, young_predict_select, shear_predict
+del freq_simple, freq_full, freq_andrea, freq_iv, freq_test
 
 #%% 2B) FREQUENCY AND LENGTH
 # --> Try a linear fit on f vs 1/L, which corresponds to the simple model
@@ -668,7 +739,25 @@ plt.savefig(figsFilename('IV_Fit', name), bbox_inches='tight')
 #plt.savefig(figsFilename('Free_Fit', name), bbox_inches='tight')
 
 #%% 2*) FREQUENCY AND LENGTH
-# --> Final
+# --> Transform values into a more fast-forward way of reading them
+
+young_str = {}
+factor_str = {}
+chi_squared_str = {}
+
+for typ in ['simple', 'full', 'andrea', 'iv']:
+    young_str[typ] = ivu.errorValueLatex(young[typ][0], 
+                                     young[typ][1], 
+                                     units="Pa")
+    try:
+        factor_str[typ] = ivu.errorValueLatex(factor[typ][0]*100, 
+                                             factor[typ][1]*100)
+    except:
+        typ
+    chi_squared_str[typ] = '{:.2E}'.format(chi_squared[typ])
+
+#%% 2**) FREQUENCY AND LENGTH
+# --> Final plots of fits
 
 plt.figure()
 ax = plt.subplot()
@@ -718,6 +807,70 @@ plt.show()
 
 # Save plot
 plt.savefig(figsFilename('FitsFinal', name), bbox_inches='tight')
+
+#%% 2***) FREQUENCY AND LENGTH
+# --> Final plots of F vs L
+
+# Data for predictions
+young_predict_select = 64e9
+factor_predict = [0, .1, .2] # fraction that represents bound
+
+# Theory predictions
+frequency_predict = np.array([f_iv(length, young_predict_select, c) 
+                              for c in factor_predict]).T
+
+# Make a plot with fit and predictions
+plt.figure()
+ax = plt.subplot()
+plt.title('Análisis de resultados')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.plot(length*1e9, frequency*1e-9,'o')
+plt.plot(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
+for freq in frequency_predict.T: plt.plot(length*1e9, freq*1e-9, ':')
+del freq
+plt.legend(["Datos", r"Ajuste en vacío con {}".format(young_str['simple'])] + 
+          ["Predicción inmerso con {:.0f} GPa al {:.0f}%".format(
+                  young_predict_select/1e9,
+                  f*100) for f in factor_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.savefig(figsFilename('PlotSuperFinal', name), bbox_inches='tight')
+
+# Make a loglog plot with fit and predictions
+plt.figure()
+ax = plt.subplot()
+plt.title('Análisis de resultados')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.loglog(length*1e9, frequency*1e-9,'o')
+plt.loglog(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
+for freq in frequency_predict.T: plt.loglog(length*1e9, freq*1e-9, ':')
+del freq
+plt.legend(["Datos", r"Ajuste en vacío con {}".format(young_str['simple'])] + 
+          ["Predicción inmerso con {:.0f} GPa al {:.0f}%".format(
+                  young_predict_select/1e9,
+                  f*100) for f in factor_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.savefig(figsFilename('LoglogSuperFinal', name), bbox_inches='tight')
+
+del factor_predict, young_predict_select, frequency_predict
+
+"""
+Multiple legends on the same Axes
+https://matplotlib.org/users/legend_guide.html
+"""
 
 #%% 3) FREQUENCY VS Q AND WIDTH
 
@@ -888,19 +1041,6 @@ width = np.array(width)
 plt.plot(Q, width)
 plt.xlabel("Factor de calidad")
 plt.ylabel("Ancho de la campana (Hz)")
-
-#%% *) EXTRA CODE
-
-for typ in ['simple', 'full', 'andrea', 'iv']:
-    young[typ] = ivu.errorValueLatex(young[typ][0], 
-                                     young[typ][1], 
-                                     units="Pa")
-    try:
-        factor[typ] = ivu.errorValueLatex(factor[typ][0]*100, 
-                                             factor[typ][1]*100)
-    except:
-        typ
-    chi_squared[typ] = '{:.2E}'.format(chi_squared[typ])
 
 #%% *) EXTRA CODE
     
