@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 #%% Parameters
 
-this_filename = 'C:\\Users\\Valeria\\OneDrive\\Labo 6 y 7\\Análisis\\Potencia_M_20191018_11\\Resultados.txt'
+this_filename = 'C:\\Users\\Valeria\\OneDrive\\Labo 6 y 7\\Análisis\\Potencia_M_20191018_10\\Resultados.txt'
 this_path = os.path.split(this_filename)[0]
 this_figure_filename = os.path.join(this_path, 'Resultados.png')
 
@@ -33,7 +33,7 @@ ax1.tick_params(axis='y', labelcolor='tab:red')
 
 # Quality factor, left axis
 ax2 = ax1.twinx()  # Second axes that shares the same x-axis
-ax2.set_ylabel('Longitud (nm)', color='tab:blue')
+ax2.set_ylabel('Tiempo de decaimiento (ps)', color='tab:blue')
 ax2.plot(this_data[:,2], 'bx')
 ax2.tick_params(axis='y', labelcolor='tab:blue')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
