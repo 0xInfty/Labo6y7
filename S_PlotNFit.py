@@ -14,12 +14,12 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20190605_11'
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+name = 'M_20191018_11'
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
 
 # Save parameters
 autosave = True
-overwrite = True
+overwrite = False
 
 # Plot parameters
 plot_params = dict(
@@ -32,7 +32,7 @@ plot_params = ivu.InstancesDict(plot_params)
 # Fit parameters
 fit_params = dict(
         use_full_mean = True,
-        use_experiments = [1], # First is 0, not 1!
+        use_experiments = [0], # First is 0, not 1!
         send_tail_to_zero = False,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
@@ -49,14 +49,18 @@ filename = ivs.filenameToMeasureFilename(name, home)
 
 # Plot
 if plot_params.plot:
-    fig, legb, savb = ivp.plotPumpProbe(filename, 
+    fig, legb, savb = ivp.plotPumpProbe(filename,
                                         interactive=plot_params.interactive, 
                                         autosave=autosave)
 
+"""
 # Several plots
-#ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=autoclose)
+import os
+path = os.path.split(filename)[0]
+ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=plot_params.autoclose)
+"""
 
-#%% LINEAR PREDICTION -------------------------------------------------------------
+#% LINEAR PREDICTION -------------------------------------------------------------
 
 # Load data
 t, V, details = ivs.loadNicePumpProbe(filename)
