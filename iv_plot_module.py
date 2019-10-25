@@ -5,7 +5,7 @@ Created on Mon Apr 15 15:08:08 2019
 @author: Vall
 """
 
-from iv_save_module import freeFile, loadNicePumpProbe
+import iv_save_module as ivs
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as wid
@@ -132,7 +132,7 @@ def interactiveLegend(ax, labels=False, show_default=True,
 
 #%%
 
-def interactiveSaveButton(filename, sufix='', new_format='{}_v{}'):
+def interactiveSaveButton(filename, extension='.png', **kwargs):
 
     """Adds an interactive save button to a given figure.
     
@@ -140,9 +140,14 @@ def interactiveSaveButton(filename, sufix='', new_format='{}_v{}'):
     ----------
     filename : str
         A model filename, which must include full path.
+    
+    Other parameters
+    ----------------
+    overwrite=False : bool
+        Says whether to overwrite files or not.
     sufix='' : str
         A sufix to be always added to the given filename.
-    new_format='{}_v{}' : str
+    newformat='{}_v{}' : str
         A formatter that allows to make new filenames in order to avoid 
         overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
         'F:\Hola_v2.png'.
@@ -153,9 +158,6 @@ def interactiveSaveButton(filename, sufix='', new_format='{}_v{}'):
         Interactive save button instance.
     """
     
-    path, name = os.path.split(filename)
-    name = os.path.splitext(name)[0]
-    
     # Since I can, I would also like an interactive 'Save' button
     ax_save = plt.axes([0.8, 0.01, 0.1, 0.04])
     save_button = wid.Button(ax_save, 'Guardar')
@@ -164,17 +166,11 @@ def interactiveSaveButton(filename, sufix='', new_format='{}_v{}'):
     def check_save_callback(event):
         Tk().withdraw()
     #   tk.newfilename = askopenfilename()
-        newpath = os.path.join(path, 'Figuras')
-        if not os.path.isdir(newpath):
-            os.makedirs(newpath)
-        newfilename = freeFile(os.path.join(newpath, name+sufix+'.png'),
-                               newformat=new_format)
         ax_save.set_visible(False)
-        plt.savefig(newfilename, bbox_inches='tight')
+        ivs.saveFig(filename, extension=extension,
+                    folder='Figuras', **kwargs)
         ax_save.set_visible(True)
-        messagebox.showinfo('¡Listo!',
-                            'Imagen guardada como {}.png'.format(
-                    os.path.split(os.path.splitext(newfilename)[0])[-1]))
+        messagebox.showinfo('¡Listo!', 'Imagen guardada')
     save_button.on_clicked(check_save_callback)
     plt.show()
     
@@ -322,7 +318,7 @@ def interactiveTimeSelector(filename, autoclose=True):
     ivs.loadNicePumpProbe
     """
     
-    t, V, details = loadNicePumpProbe(filename)
+    t, V, details = ivs.loadNicePumpProbe(filename)
     fig = plotPumpProbe(filename, autosave=False)[0]
     ax = fig.axes[0]
     ti = interactiveValueSelector(ax, y_value=False)
@@ -473,9 +469,10 @@ class IntFillingCursor(FillingCursor):
 
 #%%
 
-def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
+def plotPumpProbe(filename, extension='.png', interactive=False, autosave=True, 
+                  overwrite=False, **kwargs):
 
-    """Plots a PumpProbe experiments from a file and its mean.
+    """Plots a PumpProbe experiment from a file and its mean.
     
     Can also make an interactive plot, which holds a save button and allows to 
     choose only certain experiments to be shown from the legend.
@@ -486,10 +483,14 @@ def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
     ----------
     filename : str
         File's root (must include directory and termination).
+    extension='.png' : str
+        Image file's format.
     interactive=True : bool
         Says whether to make an interactive plot or not.
     autosave=True : bool
         Says whether to automatically save or not.
+    overwrite=False : bool
+        Says whether to allow overwriting or not.
     
     Returns
     -------
@@ -513,9 +514,7 @@ def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
     
     """
     
-    path = os.path.join(os.path.split(filename)[0], 'Figuras')
-    name = os.path.split(os.path.splitext(filename)[0])[-1]
-    t, V, details = loadNicePumpProbe(filename)
+    t, V, details = ivs.loadNicePumpProbe(filename)
     meanV = np.mean(V, axis=1)
     Nrepetitions = details['nrepetitions']
     
@@ -543,17 +542,20 @@ def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
         legend_buttons = interactiveLegend(ax, labels, show_default, 
                                            fontsize=12,
                                            x0=(.17, .68), y0=(.06, .84), **kwargs)
-        save_button = interactiveSaveButton(filename)
+        save_button = interactiveSaveButton(filename, extension=extension, 
+                                            overwrite=overwrite,
+                                            sufix='_fig', **kwargs)
     else:
         plt.legend(labels, fontsize=12, framealpha=1, **kwargs)
-    
-    if not os.path.isdir(path):
-        os.makedirs(path)
-    
+       
     if autosave:
         if interactive:
             save_button.ax.set_visible(False)
-        plt.savefig(os.path.join(path,name+'_fig.png'), bbox_inches='tight')
+        save_kwargs = dict()
+        if 'newformat' in kwargs.keys():
+            save_kwargs.add('newformat', kwargs['newformat'])        
+        ivs.saveFig(filename, extension=extension, overwrite=overwrite, 
+                    folder='Figuras', sufix='_fig', **save_kwargs)
         if interactive:
             save_button.ax.set_visible(True)
     
@@ -564,7 +566,8 @@ def plotPumpProbe(filename, interactive=False, autosave=True, **kwargs):
 
 #%%
 
-def plotAllPumpProbe(path, autosave=True, autoclose=False):
+def plotAllPumpProbe(path, extension='.png', autosave=True, autoclose=False, 
+                     **kwargs):
     
     """Plots all PumpProbe experiments on the files from a given path.
         
@@ -574,6 +577,8 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     ----------
     path : str
         Files' folder (must include directory).
+    extension='.png' : str
+        Image file's format.
     autosave=True : bool
         Says whether to save or not.
     autoclose=False : bool
@@ -603,7 +608,8 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
     
     figures = []
     for f in files:
-        fig = plotPumpProbe(f, interactive=False, autosave=autosave)[0]
+        fig = plotPumpProbe(f, extension=extension, interactive=False, 
+                            autosave=autosave, **kwargs)[0]
         if autoclose:
             plt.close(fig)
         else:
@@ -614,21 +620,27 @@ def plotAllPumpProbe(path, autosave=True, autoclose=False):
 
 #%%
     
-def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
+def linearPredictionPlot(filename, plot_results, extension='.png', 
+                         autosave=True, overwrite=False,
+                         showgrid=False):
 
     """Plots the results of a linear prediction plot.
     
     Parameters
     ----------
     filename : str
-        File's root (must include directory and termination).
+        File's root (must include directory and extension).
     plot_results : ivu.InstancesDict
         Fit results that allow to plot. Must include...
         ...numpy array 'fit', that holds time, data, fit and fit terms
         ...numpy.array 'raman', that holds frequencies, fit spectrum and fit 
         terms' spectrum.
+    extension='.png' : str
+        Image file's format.
     autosave=True : bool
         Says whether to save or not.
+    overwrite=False : bool
+        Says whether to allow overwriting or not.
     showgrid=False : bool
         Says whether to show or not the vertical grid on the time space plot.
     
@@ -643,8 +655,7 @@ def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
     
     Raises
     ------
-    pngfile : .png file
-        PNG image file. Only raised if 'autosave=True'.
+    Image file. Only raised if 'autosave=True'.
     
     See also
     --------
@@ -658,8 +669,10 @@ def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
     Nfit_terms = fit.shape[1] - 3
     
     # In order to save, if needed, I will need...
-    name = os.path.split(os.path.splitext(filename)[0])[-1]
-    path = os.path.split(filename)[0]
+    newpath = os.path.join(os.path.split(filename)[0], 'Figuras')
+    filename = os.path.join(newpath, 
+                            os.path.splitext(os.path.split(filename)[1])[0],
+                            extension)
     
     # Then, to plot, I first start a figure
     fig = plt.figure()
@@ -721,18 +734,17 @@ def linearPredictionPlot(filename, plot_results, autosave=True, showgrid=False):
     legend_buttons.on_clicked(legend_callback)
     
     # Since I can, I would also like an interactive 'Save' button
-    save_button = interactiveSaveButton(filename, sufix='_fit')
+    save_button = interactiveSaveButton(filename, overwrite=overwrite, 
+                                        sufix='_fit')
     
     # Once I have all that, I'll show the plot
     plt.show()
     
     # Like it is shown for the first time, autosave if configured that way
     if autosave:
-        newpath = os.path.join(path, 'Figuras')
-        if not os.path.isdir(newpath):
-            os.makedirs(newpath)
         save_button.ax.set_visible(False)
-        plt.savefig(os.path.join(newpath, name+'_fit.png'), bbox_inches='tight')
+        ivs.saveFig(filename, overwrite=overwrite, folder='Figuras', 
+                    sufix='_fit')
         save_button.ax.set_visible(True)
         
     return fig, legend_buttons, save_button
