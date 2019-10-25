@@ -7,16 +7,8 @@ It could be divided into 3 sections:
     (2) loading data from PumpProbe experiments ('loadPumpProbe', 
     'loadNicePumpProbe', 'filenameTo...')
     (2) saving data into files with the option of not overwriting 
-    ('saveTxt')
+    ('saveFig', 'saveTxt')
     (4) loading data from files ('retrieveHeader', 'retrieveFooter')
-
-new_dir : function
-    Makes and returns a new related directory to avoid overwriting.
-free_file : function
-    Returns a name for a new file to avoid overwriting.
-
-savetxt : function
-    Saves some np.array like data on a '.txt' file.
 
 @author: Vall
 """
@@ -24,6 +16,7 @@ savetxt : function
 import iv_utilities_module as ivu
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 #%%
 
@@ -74,7 +67,7 @@ def newDir(my_dir, newformat='{}_{}'):
 
 #%%
 
-def freeFile(my_file, newformat='{}_{}'):
+def freeFile(my_file, folder='', sufix='', newformat='{}_v{}'):
     
     """Returns a name for a new file to avoid overwriting.
         
@@ -86,8 +79,12 @@ def freeFile(my_file, newformat='{}_{}'):
     ----------
     my_file : str
         Tentative filename (must contain full path and extension).
-    newformat='{}_{}' : str
-        Format string that indicates how to make new names.
+    sufix='' : str
+        A sufix to be always added to the given filename.
+    newformat='{}_v{}' : str
+        A formatter that allows to make new filenames in order to avoid 
+        overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
+        'F:\Hola_v2.png'.
     
     Returns
     -------
@@ -97,10 +94,13 @@ def freeFile(my_file, newformat='{}_{}'):
     """
     
     base = os.path.split(my_file)[0]
+    if folder!='':
+        my_base = os.path.join(base, folder)
     extension = os.path.splitext(my_file)[-1]
+    my_file = os.path.join(my_base, os.path.split(my_file)[1]+sufix, extension)
     
-    if not os.path.isdir(base):
-        os.makedirs(base)
+    if not os.path.isdir(my_base):
+        os.makedirs(my_base)
         free_file = my_file
     
     else:
@@ -370,10 +370,7 @@ def linearPredictionSave(filename, results, other_results, fit_parameters,
     saveTxt
     
     """
-    
-    path, name = os.path.split(filename)
-    filename = os.path.join(path, 'Ajustes', name)
-    
+        
     fit_params = fit_parameters.__dict__ # Because it's an ivu.InstancesDict
     
     footer = {}
@@ -383,14 +380,61 @@ def linearPredictionSave(filename, results, other_results, fit_parameters,
     saveTxt(filename, results,
             header=["F (GHz)", "Tau (ps)", "Q", "A (u.a.)", "Phi (pi rad)"],
             footer=footer,
-            overwrite=overwrite, newformat='{}_v{}')
+            overwrite=overwrite, 
+            folder='Ajustes')
+    
+    return
+
+#%%
+    
+def saveFig(filename, figure=plt.gcf(), extension='.png', overwrite=False, 
+              **kwargs):
+    
+    """Saves a matplotlib figure in a compact format.
+    
+    This function takes per default the current plot and saves it on file. If 
+    'overwrite=False', it checks whether 'filename' exists or not; if it already 
+    exists, it defines a new file in order to not allow overwritting. If 
+    overwrite=True, it saves on 'filename' even if it already exists.
+    
+    Variables
+    ---------
+    filename : string
+        The name you wish (must include full path and extension).
+    figure=plt.gcf() : plt.figure
+        The figure you wish to save (default is current figure)
+    overwrite=False : bool, optional
+        Indicates whether to overwrite or not.
+    
+    Return
+    ------
+    nothing
+    
+    Yield
+    -----
+    image file
+    
+    See Also
+    --------
+    freeFile
+    
+    """
+    
+    filename = os.path.splitext(filename)[0] + extension
+    
+    if not overwrite:
+        filename = freeFile(filename, **kwargs)
+        
+    plt.savefig(filename, bbox_inches='tight')
+    
+    print('Imagen guardada en {}'.format(filename))
     
     return
 
 #%%
 
 def saveTxt(filename, datanumpylike, header='', footer='', 
-            overwrite=False, newformat='{}_{}'):
+            overwrite=False, **kwargs):
     
     """Takes some array-like data and saves it on a '.txt' file.
     
@@ -429,11 +473,7 @@ def saveTxt(filename, datanumpylike, header='', footer='',
     freeFile
     
     """
-    
-    base = os.path.split(filename)[0]
-    if not os.path.isdir(base):
-        os.makedirs(base)
-    
+        
     if header != '':
         if not isinstance(header, str):
             try:
@@ -456,14 +496,9 @@ def saveTxt(filename, datanumpylike, header='', footer='',
                 footer = ''.join(aux)
             except:
                 TypeError('Header should be a dict or a string')
-
-    filename = os.path.join(
-            base,
-            (os.path.splitext(os.path.basename(filename))[0] + '.txt'),
-            )
-    
+   
     if not overwrite:
-        filename = freeFile(filename, newformat=newformat)
+        filename = freeFile(filename, **kwargs)
         
     np.savetxt(filename, np.array(datanumpylike), 
                delimiter='\t', newline='\n', header=header, footer=footer)
