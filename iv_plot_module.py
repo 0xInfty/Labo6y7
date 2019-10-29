@@ -544,7 +544,7 @@ def plotPumpProbe(filename, extension='.png', interactive=False, autosave=True,
         save_button = interactiveSaveButton(filename, extension=extension, 
                                             overwrite=overwrite,
                                             folder='Figuras',
-                                            sufix='_fig', **kwargs)
+                                            sufix='_fig')
     else:
         plt.legend(labels, fontsize=12, framealpha=1, **kwargs)
        
@@ -555,7 +555,7 @@ def plotPumpProbe(filename, extension='.png', interactive=False, autosave=True,
         if 'newformat' in kwargs.keys():
             save_kwargs.add('newformat', kwargs['newformat'])        
         ivs.saveFig(filename, extension=extension, overwrite=overwrite, 
-                    folder='Figuras', sufix='_fig', **save_kwargs)
+                    folder='Figuras', sufix='_fig')
         if interactive:
             save_button.ax.set_visible(True)
     
