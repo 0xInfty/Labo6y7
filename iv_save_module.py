@@ -67,7 +67,41 @@ def newDir(my_dir, newformat='{}_{}'):
 
 #%%
 
-def freeFile(my_file, folder='', sufix='', newformat='{}_v{}'):
+def filenameCreator(my_file, folder='', sufix=''):
+    
+    """Returns same filename in a different folder and with a sufix if given.
+    
+    Parameters
+    ----------
+    my_file : str
+        Tentative filename (must contain full path and extension).
+    folder='' : str
+        A new folder or set of folders to be added to the folder.
+    sufix='' : str
+        A sufix to be added to the given filename.
+    
+    Returns
+    -------
+    new_file : str
+        New filename (also contains full path and same extension)
+    """
+
+    base = os.path.split(my_file)[0]
+    if folder!='':
+        base = os.path.join(base, folder)
+    extension = os.path.splitext(my_file)[-1]
+    new_file = os.path.join(
+        base, 
+        os.path.splitext( os.path.split(my_file)[1] )[0] + sufix + extension)
+    
+    if not os.path.isdir(base):
+        os.makedirs(base)
+    
+    return new_file
+
+#%%
+
+def freeFile(my_file, newformat='{}_v{}'):
     
     """Returns a name for a new file to avoid overwriting.
         
@@ -79,8 +113,6 @@ def freeFile(my_file, folder='', sufix='', newformat='{}_v{}'):
     ----------
     my_file : str
         Tentative filename (must contain full path and extension).
-    sufix='' : str
-        A sufix to be always added to the given filename.
     newformat='{}_v{}' : str
         A formatter that allows to make new filenames in order to avoid 
         overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
@@ -94,12 +126,7 @@ def freeFile(my_file, folder='', sufix='', newformat='{}_v{}'):
     """
     
     base = os.path.split(my_file)[0]
-    if folder!='':
-        base = os.path.join(base, folder)
     extension = os.path.splitext(my_file)[-1]
-    my_file = os.path.join(
-        base, 
-        os.path.splitext( os.path.split(my_file)[1] )[0] + sufix + extension)
     
     if not os.path.isdir(base):
         os.makedirs(base)
@@ -389,10 +416,10 @@ def linearPredictionSave(filename, results, other_results, fit_parameters,
 
 #%%
     
-def saveFig(filename, figure=plt.gcf(), extension='.png', overwrite=False, 
-              **kwargs):
+def saveFig(filename, extension='.png', overwrite=False, 
+            newformat='{}_v{}', **kwargs):
     
-    """Saves a matplotlib figure in a compact format.
+    """Saves current matplotlib figure in a compact format.
     
     This function takes per default the current plot and saves it on file. If 
     'overwrite=False', it checks whether 'filename' exists or not; if it already 
@@ -401,12 +428,23 @@ def saveFig(filename, figure=plt.gcf(), extension='.png', overwrite=False,
     
     Variables
     ---------
-    filename : string
-        The name you wish (must include full path and extension).
-    figure=plt.gcf() : plt.figure
-        The figure you wish to save (default is current figure)
+    filename : str
+        The name you wish (must include full path).
+    extension='.png' : str
+        An image extension; i.e.: '.pdf', '.jpg'.
     overwrite=False : bool, optional
         Indicates whether to overwrite or not.
+    newformat='{}_v{}' : str
+        A formatter that allows to make new filenames in order to avoid 
+        overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
+        'F:\Hola_v2.png'.
+    
+    Other parameters
+    ----------------
+    folder='' : str
+        A new folder or set of folders to be added to the folder.
+    sufix='' : str
+        A sufix to be added to the given filename.
     
     Return
     ------
@@ -423,10 +461,11 @@ def saveFig(filename, figure=plt.gcf(), extension='.png', overwrite=False,
     """
     
     filename = os.path.splitext(filename)[0] + extension
+    filename = filenameCreator(filename, **kwargs)
     
     if not overwrite:
-        filename = freeFile(filename, **kwargs)
-        
+        filename = freeFile(filename, newformat=newformat)
+    
     plt.savefig(filename, bbox_inches='tight')
     
     print('Imagen guardada en {}'.format(filename))
@@ -436,7 +475,7 @@ def saveFig(filename, figure=plt.gcf(), extension='.png', overwrite=False,
 #%%
 
 def saveTxt(filename, datanumpylike, header='', footer='', 
-            overwrite=False, **kwargs):
+            overwrite=False, newformat='{}_v{}', **kwargs):
     
     """Takes some array-like data and saves it on a '.txt' file.
     
@@ -461,6 +500,17 @@ def saveTxt(filename, datanumpylike, header='', footer='',
         Data's specifications. Its elements and keys should be str. 
         But footer could also be a single string. Otherwise, an element 
         could be a tuple containing value and units; i.e.: (100, 'Hz').
+    newformat='{}_v{}' : str
+        A formatter that allows to make new filenames in order to avoid 
+        overwriting. If 'F:\Hola.png' does already exist, new file is saved as 
+        'F:\Hola_v2.png'.
+    
+    Other parameters
+    ----------------
+    folder='' : str
+        A new folder or set of folders to be added to the folder.
+    sufix='' : str
+        A sufix to be added to the given filename.
     
     Return
     ------
@@ -499,8 +549,9 @@ def saveTxt(filename, datanumpylike, header='', footer='',
             except:
                 TypeError('Header should be a dict or a string')
    
+    filename = filenameCreator(filename, **kwargs)
     if not overwrite:
-        filename = freeFile(filename, **kwargs)
+        filename = freeFile(filename, newformat=newformat)
         
     np.savetxt(filename, np.array(datanumpylike), 
                delimiter='\t', newline='\n', header=header, footer=footer)
