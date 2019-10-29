@@ -5,7 +5,6 @@ Created on Wed Oct 23 15:26:46 2019
 @author: Valeria
 """
 
-import os
 import iv_save_module as ivs
 import iv_utilities_module as ivu
 import matplotlib.pyplot as plt
@@ -13,8 +12,6 @@ import matplotlib.pyplot as plt
 #%% Parameters
 
 this_filename = 'C:\\Users\\Valeria\\OneDrive\\Labo 6 y 7\\Análisis\\Potencia_M_20191018_10\\Resultados.txt'
-this_path = os.path.split(this_filename)[0]
-this_figure_filename = os.path.join(this_path, 'Resultados.png')
 
 #%% Load data
 
@@ -45,7 +42,7 @@ ax1.tick_params(length=2)
 ax1.grid(axis='x', which='both')
 
 # Save plot
-plt.savefig(this_figure_filename, bbox_inches='tight')
+ivs.saveFig(this_filename)
 
 #%% Make table
 
