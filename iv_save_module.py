@@ -95,12 +95,14 @@ def freeFile(my_file, folder='', sufix='', newformat='{}_v{}'):
     
     base = os.path.split(my_file)[0]
     if folder!='':
-        my_base = os.path.join(base, folder)
+        base = os.path.join(base, folder)
     extension = os.path.splitext(my_file)[-1]
-    my_file = os.path.join(my_base, os.path.split(my_file)[1]+sufix, extension)
+    my_file = os.path.join(
+        base, 
+        os.path.splitext( os.path.split(my_file)[1] )[0] + sufix + extension)
     
-    if not os.path.isdir(my_base):
-        os.makedirs(my_base)
+    if not os.path.isdir(base):
+        os.makedirs(base)
         free_file = my_file
     
     else:

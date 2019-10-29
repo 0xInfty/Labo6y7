@@ -26,6 +26,7 @@ plot_params = dict(
         plot = False,
         interactive = False,
         autoclose = True,
+        extension = '.png'
         )
 plot_params = ivu.InstancesDict(plot_params)
 
@@ -51,13 +52,20 @@ filename = ivs.filenameToMeasureFilename(name, home)
 if plot_params.plot:
     fig, legb, savb = ivp.plotPumpProbe(filename,
                                         interactive=plot_params.interactive, 
-                                        autosave=autosave)
+                                        extension=plot_params.extension,
+                                        autosave=autosave,
+                                        overwrite=overwrite
+                                        )
 
 """
 # Several plots
 import os
 path = os.path.split(filename)[0]
-ivp.plotAllPumpProbe(path, autosave=autosave, autoclose=plot_params.autoclose)
+ivp.plotAllPumpProbe(path,
+                     autoclose=plot_params.autoclose,
+                     extension=plot_params.extension,
+                     autosave=autosave,
+                     overwrite=overwrite)
 """
 
 #% LINEAR PREDICTION -------------------------------------------------------------
@@ -68,6 +76,7 @@ t, V, details = ivs.loadNicePumpProbe(filename)
 # Choose time interval to fit
 if fit_params.choose_t0: # Choose initial time t0
     t0 = ivp.interactiveTimeSelector(filename, autoclose=plot_params.autoclose)
+
     t, V = iva.cropData(t0, t, V)
 else:
     t0 = t[0]
@@ -106,7 +115,10 @@ if autosave:
                              overwrite=overwrite)
 
 # Plot linear prediction
-ivp.linearPredictionPlot(filename, plot_results, autosave=autosave)
+ivp.linearPredictionPlot(filename, plot_results, 
+                         autosave=autosave,
+                         extension=plot_params.extension,
+                         overwrite=overwrite)
 
 # Generate fit tables
 tables = iva.linearPredictionTables(fit_params, results, other_results)

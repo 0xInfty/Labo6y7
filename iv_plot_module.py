@@ -132,7 +132,7 @@ def interactiveLegend(ax, labels=False, show_default=True,
 
 #%%
 
-def interactiveSaveButton(filename, extension='.png', **kwargs):
+def interactiveSaveButton(filename, **kwargs):
 
     """Adds an interactive save button to a given figure.
     
@@ -167,8 +167,7 @@ def interactiveSaveButton(filename, extension='.png', **kwargs):
         Tk().withdraw()
     #   tk.newfilename = askopenfilename()
         ax_save.set_visible(False)
-        ivs.saveFig(filename, extension=extension,
-                    folder='Figuras', **kwargs)
+        ivs.saveFig(filename, **kwargs)
         ax_save.set_visible(True)
         messagebox.showinfo('¡Listo!', 'Imagen guardada')
     save_button.on_clicked(check_save_callback)
@@ -544,6 +543,7 @@ def plotPumpProbe(filename, extension='.png', interactive=False, autosave=True,
                                            x0=(.17, .68), y0=(.06, .84), **kwargs)
         save_button = interactiveSaveButton(filename, extension=extension, 
                                             overwrite=overwrite,
+                                            folder='Figuras',
                                             sufix='_fig', **kwargs)
     else:
         plt.legend(labels, fontsize=12, framealpha=1, **kwargs)
@@ -669,10 +669,7 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
     Nfit_terms = fit.shape[1] - 3
     
     # In order to save, if needed, I will need...
-    newpath = os.path.join(os.path.split(filename)[0], 'Figuras')
-    filename = os.path.join(newpath, 
-                            os.path.splitext(os.path.split(filename)[1])[0],
-                            extension)
+    filename = os.path.splitext(filename)[0] + extension
     
     # Then, to plot, I first start a figure
     fig = plt.figure()
@@ -735,7 +732,7 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
     
     # Since I can, I would also like an interactive 'Save' button
     save_button = interactiveSaveButton(filename, overwrite=overwrite, 
-                                        sufix='_fit')
+                                        folder='Figuras', sufix='_fit')
     
     # Once I have all that, I'll show the plot
     plt.show()
