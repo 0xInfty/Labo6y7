@@ -6,7 +6,7 @@ Created on Wed Oct 30 09:58:43 2019
 """
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import os
 import iv_save_module as ivs
 import iv_utilities_module as ivu
@@ -19,14 +19,15 @@ home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 17] # in GHz
-full_series = ['Fused Silica + Aire', 'Fused Silica + Ta2O5']
+full_series = ['Aire', 'Ta2O5']
 series = ['LIGO1_PostUSA', 'LIGO1']
 sem_series = ['LIGO1_1', 'LIGO1_1']
+name = 'FusedSilica'
 
 # Some functions and variables to manege filenames
 def semFilename(sem_series, home=home):
     """Given a series 'M135_7B_1D', returns path to SEM data"""
-    filename = 'Resultados_SEM_{}.txt'.format(series)
+    filename = 'Resultados_SEM_{}.txt'.format(sem_series)
     sem_series = sem_series.split('_') # From 'M_20190610_01' take '20190610'
     sem_filename = os.path.join(home, 'Muestras\SEM', *sem_series, filename)
     return sem_filename
@@ -37,7 +38,7 @@ paramsFilename = lambda series : os.path.join(home,
                                               r'Análisis/Params_{}.txt'.format(
                                                    series))
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
-figs_folder = r'Análisis/ComparedAnalysis'+series
+figs_folder = r'Análisis/ComparedAnalysis_{}'.format(name)
 figs_extension = '.png'
 
 #%% LOAD DATA -----------------------------------------------------------------
@@ -120,19 +121,19 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     
     # Also load data from SEM dimension analysis
     ssem_data, sem_header, ssem_footer = ivs.loadTxt(semFilename(ss))
-    other_data = []
-    for d in ssem_data:
-        for di in d:
-            other_data.append([*di])
-    other_data =  np.array(other_data)
-    del d, di
+#    other_data = []
+#    for d in ssem_data:
+#        for di in d:
+#            other_data.append([*di])
+#    other_data =  np.array(other_data)
+#    del d, di
     
     # Now lets put every rod in the same order for SEM and fits
     index = [ssem_footer['rods'].index(r) for r in srods]
-    ssem_data = np.array([other_data[i] for i in index])
+    ssem_data = np.array([ssem_data[i,:] for i in index])
     slength = ssem_data[:,2] * 1e-9 # m
     swidth = ssem_data[:,0] * 1e-9 # m
-    del other_data, index
+    del index
     
 #    # Now we can filter the results
 #    index = np.argsort(sfrequency) # Remove the two lowest frequencies
@@ -155,6 +156,7 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     # Now add all that data to a list outside the loop
     filenames.append(sfilenames)
     rods.append(srods)
+    params.append(sparams)
     fits_data.append(sfits_data)
     fits_footer.append(sfits_footer)
     frequency.append(sfrequency)
@@ -209,3 +211,36 @@ for i, s, fs in zip(range(len(series)), series, full_series):
                 footer=dict(rods=rods, filenames=filenames),
                 overwrite=True)
     del whole_data, whole_filename
+    
+#%%
+    
+#%% 1A) FREQUENCY AND QUALITY FACTOR PER ROD
+
+# Plot results for the different rods
+fig, ax1 = plt.subplots()
+
+# Frequency plot, right axis
+ax1.set_xlabel('Antena')
+ax1.set_ylabel('Frecuencia (GHz)', color='tab:red')
+ax1.plot(fits_data[0][:,0], 'ro', fits_data[1][:,0], 'rx')
+ax1.tick_params(axis='y', labelcolor='tab:red')
+
+# Quality factor, left axis
+#ax2 = ax1.twinx() # Second axes that shares the same x-axis
+#ax2.set_ylabel('Factor de calidad (u.a.)', color='tab:blue')
+#ax2.plot(fits_data[0][:,2], 'bo', fits_data[1][:,2], 'bx')
+#ax2.tick_params(axis='y', labelcolor='tab:blue')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+
+# Format graph
+plt.xticks(np.arange(len(rods[1])), rods[1], rotation='vertical')
+plt.grid(which='both', axis='x')
+ax1.tick_params(length=2)
+ax1.grid(axis='x', which='both')
+ax1.tick_params(axis='x', labelrotation=90)
+ax1.legend(['F Ta2O5', 'F Aire'])
+#ax2.legend(['Q Aire', 'Q Ta2O5'], location='upper right')
+
+# Save plot
+ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, folder=figs_folder)
