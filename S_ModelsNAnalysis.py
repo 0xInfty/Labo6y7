@@ -20,10 +20,10 @@ desired_frequency = 10 # in GHz
 
 # Path to a list of filenames and rods to analize
 
-rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1.txt')
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1_PostUSA.txt')
 sem_series = ['LIGO1_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
-name = 'LIGO1'
+name = 'LIGO1_PostUSA'
 """
 rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']

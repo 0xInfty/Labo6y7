@@ -14,8 +14,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20191018_11'
-home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+name = 'M_20191101_11'
+home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 
 # Save parameters
 autosave = True
@@ -23,7 +23,7 @@ overwrite = False
 
 # Plot parameters
 plot_params = dict(
-        plot = False,
+        plot = True,
         interactive = False,
         autoclose = True,
         extension = '.png'
@@ -38,8 +38,8 @@ fit_params = dict(
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
-        choose_tf = False,
-        max_svalues = 8,
+        choose_tf = True,
+        max_svalues = 15,
         )
 fit_params = ivu.InstancesDict(fit_params)
 
@@ -54,7 +54,7 @@ if plot_params.plot:
                                         interactive=plot_params.interactive, 
                                         extension=plot_params.extension,
                                         autosave=autosave,
-                                        overwrite=overwrite
+                                        overwrite=True
                                         )
 
 """
