@@ -20,7 +20,7 @@ home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 17] # in GHz
 full_series = ['Aire', 'Ta2O5']
-series = ['LIGO1_PostUSA', 'LIGO1']
+series = ['LIGO1', 'LIGO1_PostUSA']
 sem_series = ['LIGO1_1', 'LIGO1_1']
 name = 'FusedSilica'
 
@@ -40,6 +40,25 @@ paramsFilename = lambda series : os.path.join(home,
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
 figs_folder = r'Análisis/ComparedAnalysis_{}'.format(name)
 figs_extension = '.png'
+
+#%% MODELS --------------------------------------------------------------------
+
+# Physics' Parameters
+density = 19.3e3 # kg/m3 for gold
+Shear = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
+diameter = 27.7e-9 # m for rods
+midlength = 85e-9 # m for rods
+Viscosity = 2e-3 # Pa/s for gold
+Young = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
+density_s = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
+area = np.pi * diameter**2 / 4
+K1 = Shear * 2.75 # Pa
+K2 = np.pi * diameter * np.sqrt(density_s * Shear) # Pa.s (viscosity's units)
+
+# Theory models
+def f_simple(length, young):
+    f_0 = (np.sqrt(young/density) / (2 * length))
+    return f_0
 
 #%% LOAD DATA -----------------------------------------------------------------
 
@@ -212,9 +231,7 @@ for i, s, fs in zip(range(len(series)), series, full_series):
                 overwrite=True)
     del whole_data, whole_filename
     
-#%%
-    
-#%% 1A) FREQUENCY AND QUALITY FACTOR PER ROD
+#%% *) FREQUENCY PER ROD
 
 # Plot results for the different rods
 fig, ax1 = plt.subplots()
@@ -234,13 +251,89 @@ fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
 # Format graph
+ax1.legend(full_series)
 plt.xticks(np.arange(len(rods[1])), rods[1], rotation='vertical')
 plt.grid(which='both', axis='x')
 ax1.tick_params(length=2)
 ax1.grid(axis='x', which='both')
 ax1.tick_params(axis='x', labelrotation=90)
-ax1.legend(['F Ta2O5', 'F Aire'])
+plt.show()
 #ax2.legend(['Q Aire', 'Q Ta2O5'], location='upper right')
 
 # Save plot
 ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, folder=figs_folder)
+
+#%% *) BOXPLOTS
+
+fig = plt.figure()
+grid = plt.GridSpec(2, 1, wspace=0.5, hspace=0)
+
+ax = plt.subplot(grid[0,0])
+ax.boxplot(fits_data[0][:,0], fits_data[1][:,0], 
+           showmeans=True, meanline=True, 
+           meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
+           medianprops={'color':'r', 'linewidth':2})
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+plt.ylabel("Frecuencia (GHz)")
+ax.tick_params(axis='y', direction='in')
+    
+ax = plt.subplot(grid[1,0])
+ax.boxplot(fits_data[0][:,2], fits_data[1][:,2], 
+           showmeans=True, meanline=True, 
+           meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
+           medianprops={'color':'r', 'linewidth':2})
+for l in ax.get_xticklabels():
+    l.set_visible(False)
+del l
+plt.ylabel("Factor de calidad")
+ax.tick_params(axis='y', direction='in')
+plt.xlabel(fs, color='tab:red')
+
+plt.saveFig(figsFilename('Boxplots'), extension=figs_extension, folder=figs_folder)
+
+#%% *) FREQUENCY AND LENGTH FIT
+
+
+
+#%% *) FREQUENCY AND LENGTH
+# --> Final plots of F vs L
+
+# Data for predictions
+young_predict_select = 64e9
+factor_predict = [0, .1, .2] # fraction that represents bound
+
+# Theory predictions
+frequency_predict = np.array([f_iv(length, young_predict_select, c) 
+                              for c in factor_predict]).T
+
+# Make a plot with fit and predictions
+plt.figure()
+ax = plt.subplot()
+plt.title('Análisis de resultados')
+plt.ylabel('Frecuencia (GHz)')
+plt.xlabel('Longitud (nm)')
+plt.plot(length*1e9, frequency*1e-9,'o')
+plt.plot(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
+for freq in frequency_predict.T: plt.plot(length*1e9, freq*1e-9, ':')
+del freq
+plt.legend(["Datos", r"Ajuste en vacío con {}".format(young_str['simple'])] + 
+          ["Predicción inmerso con {:.0f} GPa al {:.0f}%".format(
+                  young_predict_select/1e9,
+                  f*100) for f in factor_predict])
+ax.minorticks_on()
+ax.tick_params(axis='y')
+ax.tick_params(axis='y', which='minor', length=0)
+ax.grid(axis='both', which='both')
+plt.show()
+
+# Save plot
+plt.saveFig(figsFilename('PlotSuperFinal'), extension=figs_extension, folder=figs_folder)
+
+del factor_predict, young_predict_select, frequency_predict
+
+"""
+Multiple legends on the same Axes
+https://matplotlib.org/users/legend_guide.html
+"""
