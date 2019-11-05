@@ -15,7 +15,8 @@ import iv_utilities_module as ivu
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+overwrite = True
 
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 17] # in GHz
@@ -35,7 +36,7 @@ rodsFilename = lambda series : os.path.join(home,
                                            r'Análisis\Rods_{}.txt'.format(
                                                    series))
 paramsFilename = lambda series : os.path.join(home, 
-                                              r'Análisis/Params_{}.txt'.format(
+                                              r'Análisis\Params_{}.txt'.format(
                                                    series))
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
 figs_folder = r'Análisis/ComparedAnalysis_{}'.format(name)
@@ -44,20 +45,23 @@ figs_extension = '.png'
 #%% MODELS --------------------------------------------------------------------
 
 # Physics' Parameters
-density = 19.3e3 # kg/m3 for gold
-Shear = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
-diameter = 27.7e-9 # m for rods
-midlength = 85e-9 # m for rods
-Viscosity = 2e-3 # Pa/s for gold
-Young = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
-density_s = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
-area = np.pi * diameter**2 / 4
-K1 = Shear * 2.75 # Pa
-K2 = np.pi * diameter * np.sqrt(density_s * Shear) # Pa.s (viscosity's units)
+physics = {}
+physics['density_gold'] = 19.3e3 # kg/m3 for gold
+physics['shear_fsilica'] = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
+physics['diameter'] = 27.7e-9 # m for rods
+physics['midlength'] = 85e-9 # m for rods
+physics['viscosity_gold'] = 2e-3 # Pa/s for gold
+physics['young_g'] = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
+physics['density_s'] = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
+physics['area'] = np.pi * physics['diameter']**2 / 4
+physics['K1'] = physics['shear_s'] * 2.75 # Pa
+physics['K2'] = np.pi * physics['diameter'] 
+physics['K2'] = physics['K2'] * np.sqrt(physics['density_s'] * physics['shear_s']) 
+# Pa.s (viscosity's units)
 
 # Theory models
 def f_simple(length, young):
-    f_0 = (np.sqrt(young/density) / (2 * length))
+    f_0 = (np.sqrt(young/physics['density_gold']) / (2 * length))
     return f_0
 
 #%% LOAD DATA -----------------------------------------------------------------
@@ -191,6 +195,8 @@ del squality_factor, ssem_data, ssem_footer, slength, swidth
 
 #%%
 
+"""
+
 ### HASTA ACÁ LLEGUÉ
 
 tables = []
@@ -230,7 +236,8 @@ for i, s, fs in zip(range(len(series)), series, full_series):
                 footer=dict(rods=rods, filenames=filenames),
                 overwrite=True)
     del whole_data, whole_filename
-    
+   
+"""
 #%% *) FREQUENCY PER ROD
 
 # Plot results for the different rods
@@ -241,57 +248,47 @@ ax1.set_xlabel('Antena')
 ax1.set_ylabel('Frecuencia (GHz)', color='tab:red')
 ax1.plot(fits_data[0][:,0], 'ro', fits_data[1][:,0], 'rx')
 ax1.tick_params(axis='y', labelcolor='tab:red')
-
-# Quality factor, left axis
-#ax2 = ax1.twinx() # Second axes that shares the same x-axis
-#ax2.set_ylabel('Factor de calidad (u.a.)', color='tab:blue')
-#ax2.plot(fits_data[0][:,2], 'bo', fits_data[1][:,2], 'bx')
-#ax2.tick_params(axis='y', labelcolor='tab:blue')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+ax1.legend(full_series)
 plt.show()
 
 # Format graph
-ax1.legend(full_series)
-plt.xticks(np.arange(len(rods[1])), rods[1], rotation='vertical')
+plt.xticks(np.arange(len(rods[0])), rods[0], rotation='vertical')
 plt.grid(which='both', axis='x')
 ax1.tick_params(length=2)
-ax1.grid(axis='x', which='both')
+ax1.grid(axis='x', which='minor')
 ax1.tick_params(axis='x', labelrotation=90)
 plt.show()
-#ax2.legend(['Q Aire', 'Q Ta2O5'], location='upper right')
 
 # Save plot
-ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, folder=figs_folder)
+ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
 
 #%% *) BOXPLOTS
 
 fig = plt.figure()
-grid = plt.GridSpec(2, 1, wspace=0.5, hspace=0)
+grid = plt.GridSpec(1, 2, wspace=0.5, hspace=0)
 
 ax = plt.subplot(grid[0,0])
-ax.boxplot(fits_data[0][:,0], fits_data[1][:,0], 
+ax.boxplot([fits_data[0][:,0], fits_data[1][:,0]], 
            showmeans=True, meanline=True, 
            meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
-           medianprops={'color':'r', 'linewidth':2})
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
+           medianprops={'color':'r', 'linewidth':2},
+           labels=full_series)
 plt.ylabel("Frecuencia (GHz)")
 ax.tick_params(axis='y', direction='in')
     
-ax = plt.subplot(grid[1,0])
-ax.boxplot(fits_data[0][:,2], fits_data[1][:,2], 
+ax = plt.subplot(grid[0,1])
+ax.boxplot([fits_data[0][:,2], fits_data[1][:,2]], 
            showmeans=True, meanline=True, 
            meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
-           medianprops={'color':'r', 'linewidth':2})
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
+           medianprops={'color':'r', 'linewidth':2},
+           labels=full_series)
 plt.ylabel("Factor de calidad")
 ax.tick_params(axis='y', direction='in')
-plt.xlabel(fs, color='tab:red')
 
-plt.saveFig(figsFilename('Boxplots'), extension=figs_extension, folder=figs_folder)
+ivs.saveFig(figsFilename('Boxplots'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
 
 #%% *) FREQUENCY AND LENGTH FIT
 
