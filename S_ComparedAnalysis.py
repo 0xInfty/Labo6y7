@@ -331,7 +331,7 @@ ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
-ax.legend(location='center')
+ax.legend()
 plt.show()
 
 # Save plot
