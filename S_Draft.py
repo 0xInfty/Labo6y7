@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 # Parameters
 density = 19300 # kg/m3
-file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1.txt'
+file = r'C:\Users\Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1_PostUSA.txt'
 
 # Load data
 data, header, footer = ivs.loadTxt(file)
@@ -41,13 +41,16 @@ fit_viscosity = iva.nonLinearFit(length, damping_time, tau_function,
 
 #%%
 
+x1=data[:, 2] * 1e-9
+y1=data[:,6]
+
 # Plot
 plt.figure()
 ax = plt.subplot()
-plt.plot(length, damping_time, '.')
-plt.plot(length, tau_function(length, fit_viscosity[0]), '-r')
+plt.plot(x1, y1, '.')
+#plt.plot(length, tau_function(length, fit_viscosity[0]), '-r')
 plt.xlabel('Longitud $L$ (m)')
-plt.ylabel(r'Tiempo de decaimiento $\tau$ (s)')
-plt.title(r'Ajuste')
-plt.legend(['Datos', 'Ajuste'])
+plt.ylabel(r'Frecuencia $GHz$ (s)')
+plt.title(r'f vs. L')
+plt.legend(['Datos'])
 plt.grid(axis='x')

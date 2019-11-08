@@ -10,12 +10,14 @@ import matplotlib.pyplot as plt
 import os
 import iv_save_module as ivs
 import iv_utilities_module as ivu
-#import iv_analysis_module as iva
+import iv_analysis_module as iva
 
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+load_sem = True
+fit_series = 0
 
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 17] # in GHz
@@ -35,29 +37,34 @@ rodsFilename = lambda series : os.path.join(home,
                                            r'Análisis\Rods_{}.txt'.format(
                                                    series))
 paramsFilename = lambda series : os.path.join(home, 
-                                              r'Análisis/Params_{}.txt'.format(
+                                              r'Análisis\Params_{}.txt'.format(
                                                    series))
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
 figs_folder = r'Análisis/ComparedAnalysis_{}'.format(name)
 figs_extension = '.png'
+overwrite = True
 
 #%% MODELS --------------------------------------------------------------------
 
 # Physics' Parameters
-density = 19.3e3 # kg/m3 for gold
-Shear = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
-diameter = 27.7e-9 # m for rods
-midlength = 85e-9 # m for rods
-Viscosity = 2e-3 # Pa/s for gold
-Young = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
-density_s = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
-area = np.pi * diameter**2 / 4
-K1 = Shear * 2.75 # Pa
-K2 = np.pi * diameter * np.sqrt(density_s * Shear) # Pa.s (viscosity's units)
+physics = {}
+physics['density_gold'] = 19.3e3 # kg/m3 for gold
+physics['shear_fsilica'] = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
+physics['diameter'] = 27.7e-9 # m for rods
+physics['midlength'] = 85e-9 # m for rods
+physics['viscosity_gold'] = 2e-3 # Pa/s for gold
+physics['young_gold'] = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
+physics['density_fsilica'] = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
+physics['area'] = np.pi * physics['diameter']**2 / 4
+physics['K1'] = physics['shear_fsilica'] * 2.75 # Pa
+physics['K2'] = np.pi * physics['diameter'] 
+aux = np.sqrt(physics['density_fsilica'] * physics['shear_fsilica']) 
+physics['K2'] = physics['K2'] * aux # Pa.s (viscosity's units)
+del aux
 
 # Theory models
 def f_simple(length, young):
-    f_0 = (np.sqrt(young/density) / (2 * length))
+    f_0 = (np.sqrt(young/physics['density_gold']) / (2 * length))
     return f_0
 
 #%% LOAD DATA -----------------------------------------------------------------
@@ -70,10 +77,11 @@ fits_footer = []
 frequency = []
 damping_time = []
 quality_factor = []
-sem_data = []
-sem_footer = []
-length = []
-width = []
+if load_sem:
+    sem_data = []
+    sem_footer = []
+    length = []
+    width = []
 
 for s, ss, f in zip(series, sem_series, desired_frequency):
 
@@ -138,39 +146,43 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     squality_factor = sfits_data[:,2]
     del rod, fit, i, fits_new_data
     
-    # Also load data from SEM dimension analysis
-    ssem_data, sem_header, ssem_footer = ivs.loadTxt(semFilename(ss))
-#    other_data = []
-#    for d in ssem_data:
-#        for di in d:
-#            other_data.append([*di])
-#    other_data =  np.array(other_data)
-#    del d, di
+    if load_sem:
     
-    # Now lets put every rod in the same order for SEM and fits
-    index = [ssem_footer['rods'].index(r) for r in srods]
-    ssem_data = np.array([ssem_data[i,:] for i in index])
-    slength = ssem_data[:,2] * 1e-9 # m
-    swidth = ssem_data[:,0] * 1e-9 # m
-    del index
+        # Also load data from SEM dimension analysis
+        ssem_data, sem_header, ssem_footer = ivs.loadTxt(semFilename(ss))
+    #    other_data = []
+    #    for d in ssem_data:
+    #        for di in d:
+    #            other_data.append([*di])
+    #    other_data =  np.array(other_data)
+    #    del d, di
+        
+        # Now lets put every rod in the same order for SEM and fits
+        index = [ssem_footer['rods'].index(r) for r in srods]
+        ssem_data = np.array([ssem_data[i,:] for i in index])
+        slength = ssem_data[:,2] * 1e-9 # m
+        swidth = ssem_data[:,0] * 1e-9 # m
+        del index
     
 #    # Now we can filter the results
 #    index = np.argsort(sfrequency) # Remove the two lowest frequencies
-#    slength = slength[index[2:]]
-#    swidth = swidth[index[2:]]
+#    if load_sem:
+#       slength = slength[index[2:]]
+#       swidth = swidth[index[2:]]
 #    sfrequency = sfrequency[index[2:]]
 #    sdamping_time = sdamping_time[index[2:]]
 #    squality_factor = squality_factor[index[2:]]
 #    del index
     
     # Since I'll be analysing frequency vs length mostly...
-    index = np.argsort(slength)
-    slength = slength[index]
-    swidth = swidth[index]
-    sfrequency = sfrequency[index]
-    sdamping_time = sdamping_time[index]
-    squality_factor = squality_factor[index]
-    del index
+    if load_sem:
+        index = np.argsort(slength)
+        slength = slength[index]
+        swidth = swidth[index]
+        sfrequency = sfrequency[index]
+        sdamping_time = sdamping_time[index]
+        squality_factor = squality_factor[index]
+        del index
     
     # Now add all that data to a list outside the loop
     filenames.append(sfilenames)
@@ -181,15 +193,18 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     frequency.append(sfrequency)
     damping_time.append(sdamping_time)
     quality_factor.append(squality_factor)
-    sem_data.append(ssem_data)
-    sem_footer.append(ssem_footer)
-    length.append(slength)
-    width.append(swidth)
+    if load_sem:
+        sem_data.append(ssem_data)
+        sem_footer.append(ssem_footer)
+        length.append(slength)
+        width.append(swidth)
     
 del sfilenames, srods, sfits_data, sfits_footer, sfrequency, sdamping_time
 del squality_factor, ssem_data, ssem_footer, slength, swidth
 
 #%%
+
+"""
 
 ### HASTA ACÁ LLEGUÉ
 
@@ -230,7 +245,8 @@ for i, s, fs in zip(range(len(series)), series, full_series):
                 footer=dict(rods=rods, filenames=filenames),
                 overwrite=True)
     del whole_data, whole_filename
-    
+   
+"""
 #%% *) FREQUENCY PER ROD
 
 # Plot results for the different rods
@@ -241,72 +257,61 @@ ax1.set_xlabel('Antena')
 ax1.set_ylabel('Frecuencia (GHz)', color='tab:red')
 ax1.plot(fits_data[0][:,0], 'ro', fits_data[1][:,0], 'rx')
 ax1.tick_params(axis='y', labelcolor='tab:red')
-
-# Quality factor, left axis
-#ax2 = ax1.twinx() # Second axes that shares the same x-axis
-#ax2.set_ylabel('Factor de calidad (u.a.)', color='tab:blue')
-#ax2.plot(fits_data[0][:,2], 'bo', fits_data[1][:,2], 'bx')
-#ax2.tick_params(axis='y', labelcolor='tab:blue')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+ax1.legend(full_series)
 plt.show()
 
 # Format graph
-ax1.legend(full_series)
-plt.xticks(np.arange(len(rods[1])), rods[1], rotation='vertical')
+plt.xticks(np.arange(len(rods[0])), rods[0], rotation='vertical')
 plt.grid(which='both', axis='x')
 ax1.tick_params(length=2)
-ax1.grid(axis='x', which='both')
+ax1.grid(axis='x', which='minor')
 ax1.tick_params(axis='x', labelrotation=90)
 plt.show()
-#ax2.legend(['Q Aire', 'Q Ta2O5'], location='upper right')
 
 # Save plot
-ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, folder=figs_folder)
+ivs.saveFig(figsFilename('FvsRod'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
 
 #%% *) BOXPLOTS
 
 fig = plt.figure()
-grid = plt.GridSpec(2, 1, wspace=0.5, hspace=0)
+grid = plt.GridSpec(1, 2, wspace=0.5, hspace=0)
 
 ax = plt.subplot(grid[0,0])
-ax.boxplot(fits_data[0][:,0], fits_data[1][:,0], 
+ax.boxplot([fits_data[0][:,0], fits_data[1][:,0]], 
            showmeans=True, meanline=True, 
            meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
-           medianprops={'color':'r', 'linewidth':2})
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
+           medianprops={'color':'r', 'linewidth':2},
+           labels=full_series)
 plt.ylabel("Frecuencia (GHz)")
 ax.tick_params(axis='y', direction='in')
     
-ax = plt.subplot(grid[1,0])
-ax.boxplot(fits_data[0][:,2], fits_data[1][:,2], 
+ax = plt.subplot(grid[0,1])
+ax.boxplot([fits_data[0][:,2], fits_data[1][:,2]], 
            showmeans=True, meanline=True, 
            meanprops={'color':'k', 'linewidth':2, 'linestyle':':'},
-           medianprops={'color':'r', 'linewidth':2})
-for l in ax.get_xticklabels():
-    l.set_visible(False)
-del l
+           medianprops={'color':'r', 'linewidth':2},
+           labels=full_series)
 plt.ylabel("Factor de calidad")
 ax.tick_params(axis='y', direction='in')
-plt.xlabel(fs, color='tab:red')
 
-plt.saveFig(figsFilename('Boxplots'), extension=figs_extension, folder=figs_folder)
+ivs.saveFig(figsFilename('Boxplots'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
 
 #%% *) FREQUENCY AND LENGTH FIT
 
-
+if load_sem:
+    young_gold = iva.nonLinearFit(length[fit_series], frequency[fit_series], 
+                                  f_simple, showplot=False)[-1][0]
+    print(r"Módulo de Young: {}".format(ivu.errorValueLatex(*young_gold, 
+                                                            units="Pa")))
+    chi_squared = sum( (f_simple(length[fit_series],
+                                 young_gold[0]) - frequency[fit_series])**2 ) 
+    chi_squared = chi_squared / len(length[fit_series])
 
 #%% *) FREQUENCY AND LENGTH
 # --> Final plots of F vs L
-
-# Data for predictions
-young_predict_select = 64e9
-factor_predict = [0, .1, .2] # fraction that represents bound
-
-# Theory predictions
-frequency_predict = np.array([f_iv(length, young_predict_select, c) 
-                              for c in factor_predict]).T
 
 # Make a plot with fit and predictions
 plt.figure()
@@ -314,24 +319,24 @@ ax = plt.subplot()
 plt.title('Análisis de resultados')
 plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
-plt.plot(length*1e9, frequency*1e-9,'o')
-plt.plot(length*1e9, 1e-9*f_simple(length, young['simple'][0]), '-r')
-for freq in frequency_predict.T: plt.plot(length*1e9, freq*1e-9, ':')
-del freq
-plt.legend(["Datos", r"Ajuste en vacío con {}".format(young_str['simple'])] + 
-          ["Predicción inmerso con {:.0f} GPa al {:.0f}%".format(
-                  young_predict_select/1e9,
-                  f*100) for f in factor_predict])
+plt.plot(length[0]*1e9, frequency[0]*1e-9,'ok', label=full_series[0])
+plt.plot(length[1]*1e9, frequency[1]*1e-9, 'xb', label=full_series[1])
+plt.plot(length[fit_series]*1e9, 
+         1e-9*f_simple(length[fit_series], young_gold[0]), 
+         '-r', 
+         label=r"Ajuste en vacío con {}".format(ivu.errorValueLatex(
+                 *young_gold, 
+                 units="Pa")))
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
 ax.grid(axis='both', which='both')
+ax.legend()
 plt.show()
 
 # Save plot
-plt.saveFig(figsFilename('PlotSuperFinal'), extension=figs_extension, folder=figs_folder)
-
-del factor_predict, young_predict_select, frequency_predict
+ivs.saveFig(figsFilename('PlotSuperFinal'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
 
 """
 Multiple legends on the same Axes
