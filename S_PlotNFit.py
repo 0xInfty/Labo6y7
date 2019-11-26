@@ -14,8 +14,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-name = 'M_20191101_11'
-home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
+name = 'M_20191115_11'
+home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
 
 # Save parameters
 autosave = True
@@ -23,7 +23,7 @@ overwrite = False
 
 # Plot parameters
 plot_params = dict(
-        plot = True,
+        plot = False,
         interactive = False,
         autoclose = True,
         extension = '.png'
@@ -32,13 +32,13 @@ plot_params = ivu.InstancesDict(plot_params)
 
 # Fit parameters
 fit_params = dict(
-        use_full_mean = True,
-        use_experiments = [0], # First is 0, not 1!
+        use_full_mean = False,
+        use_experiments = [10], # First is 0, not 1!
         send_tail_to_zero = False,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
-        choose_tf = True,
+        choose_tf = False,
         max_svalues = 15,
         )
 fit_params = ivu.InstancesDict(fit_params)
@@ -76,7 +76,7 @@ t, V, details = ivs.loadNicePumpProbe(filename)
 # Choose time interval to fit
 if fit_params.choose_t0: # Choose initial time t0
     t0 = ivp.interactiveTimeSelector(filename, autoclose=plot_params.autoclose)
-
+    
     t, V = iva.cropData(t0, t, V)
 else:
     t0 = t[0]

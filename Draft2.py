@@ -17,23 +17,27 @@ file2 = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7\Análisis\Res
 
 # Load data
 data, header, footer = ivs.loadTxt(file)
-data2, header, footer = ivs.loadTxt(file2)
+data2, header, footer2 = ivs.loadTxt(file2)
 
 #this_data = np.array([x, y]).T
 
 # Parameters
 
-density = 19300     # kg/m3
-r  = data[:, 0]/2    #radius
+rhoAu = 19300       # kg/m3
+rhoTa = 8180        # kg/m3
+gammaAu = 2e-3      # Pa/s
+
+d  = data[:, 0]
+r  = d/2   
 A  = np.pi*(r**2)
-L  = data[:, 2] #* 1e-9 # from nm to m
-L2 = data2[:, 2] #* 1e-9 # from nm to m
+L  = data[:, 2] * 1e-9 # from nm to m
+L2 = data2[:, 2] * 1e-9 # from nm to m
 
 w0 = data[:, 6] * 1e9 # from ps to s
 w  = data2[:,6] * 1e9 # from ps to s
 
 A = np.mean(A)
-
+d = np.mean(A)
 # Order data
 index = np.argsort(L)
 index2 = np.argsort(L2)
@@ -43,32 +47,43 @@ L2 = L2[index2]
 
 w0 = w0[index]
 w  = w[index2]
+
+young=78.43854513*1e9
+sigmayoung=3.18683486e+09
+
+G=4.32155921e+28
+YG=43215.5921
+sigmaG=1.90824023e+27
 #%% FIT
 
 # Define function to use while fitting
-def freerod(x, young):
-    return (np.pi/x)*(young/density)**(1/2)
+def freerod(L, young):
+    return ((1/(2*L)))*(young/rhoAu)**(1/2)
 
-def surroundedrod(w0,K1):
-    return np.sqrt(w0**2+(K1/(density*A)))
+def surroundedrod(L2,G):
+    return (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-(d*np.pi*np.sqrt(rhoTa*G)+(np.pi**2*gammaAu/(2*L**2*rhoAu)))**2)
     
 # Fit
-popt, pcov = curve_fit(surroundedrod,L,w,p0=10)
-print (popt *1e-9)
+popt, pcov = curve_fit(surroundedrod,L2,w,p0=3.66931003e+28)
+print (popt)
+
+sigma=np.sqrt(np.diag(pcov))
+print (sigma)
 #%% PLOT
-
-x=
-y=
-
 # Plot
+
 plt.figure()
 ax = plt.subplot()
-plt.plot(x , y , 'o''r')
-plt.plot(x , freerod(x,popt))
+
+plt.plot(L2 , w , 'o''r')
+plt.plot(L2 , surroundedrod(L2,G),'r')
+plt.plot(L, w0 , 'o''b')
+plt.plot(L , freerod(L,young),'b')
+
 plt.xlabel('Longitud $L$ (m)')
 plt.ylabel(r'frecuencia $GHz$ (s)')
 plt.title(r'Frecuencia vs Longitud')
-plt.legend(['En aire', 'En Ta2O5'])
+plt.legend(['En Ta2O5', 'ajuste','En aire', 'ajuste'])
 plt.grid(axis='x', which = 'both')
 ax.minorticks_on()
 ax.tick_params(axis='y', which='minor', left=False)
