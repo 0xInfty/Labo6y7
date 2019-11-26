@@ -15,16 +15,15 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+home = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7'
 load_sem = True
-fit_series = 0
 
 # For each data to compare, we need one value on each list
-desired_frequency = [12, 17] # in GHz
-full_series = ['Aire', 'Ta2O5']
-series = ['LIGO1', 'LIGO1_PostUSA']
-sem_series = ['LIGO1_1', 'LIGO1_1']
-name = 'FusedSilica'
+desired_frequency = [12, 16] # in GHz # [9]
+full_series = ['Aire', 'Ta2O5'] # ['Ta2O5']
+series = ['LIGO1', 'LIGO1_PostUSA'] # ['LIGO5bis']
+sem_series = ['LIGO1_1', 'LIGO1_1'] # ['nan']
+name = 'FusedSilica' # 'LIGO5bis'
 
 # Some functions and variables to manege filenames
 def semFilename(sem_series, home=home):
@@ -40,7 +39,7 @@ paramsFilename = lambda series : os.path.join(home,
                                               r'Análisis\Params_{}.txt'.format(
                                                    series))
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
-figs_folder = r'Análisis/ComparedAnalysis_{}'.format(name)
+figs_folder = r'Análisis\ComparedAnalysis_{}'.format(name) #ComparedAnalysis_{}'.format(name)
 figs_extension = '.png'
 overwrite = True
 
@@ -55,6 +54,7 @@ physics['midlength'] = 85e-9 # m for rods
 physics['viscosity_gold'] = 2e-3 # Pa/s for gold
 physics['young_gold'] = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
 physics['density_fsilica'] = np.mean([2.17e3, 2.22e3]) # kg/m3 for fused silica
+physics['density_ta2o5'] = 8.18e3 # kg/m3 for Ta2O5
 physics['area'] = np.pi * physics['diameter']**2 / 4
 physics['K1'] = physics['shear_fsilica'] * 2.75 # Pa
 physics['K2'] = np.pi * physics['diameter'] 
@@ -150,16 +150,10 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     
         # Also load data from SEM dimension analysis
         ssem_data, sem_header, ssem_footer = ivs.loadTxt(semFilename(ss))
-    #    other_data = []
-    #    for d in ssem_data:
-    #        for di in d:
-    #            other_data.append([*di])
-    #    other_data =  np.array(other_data)
-    #    del d, di
-        
+          
         # Now lets put every rod in the same order for SEM and fits
         index = [ssem_footer['rods'].index(r) for r in srods]
-        ssem_data = np.array([ssem_data[i,:] for i in index])
+        ssem_data = ssem_data[index,:]
         slength = ssem_data[:,2] * 1e-9 # m
         swidth = ssem_data[:,0] * 1e-9 # m
         del index
@@ -176,9 +170,15 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     
     # Since I'll be analysing frequency vs length mostly...
     if load_sem:
-        index = np.argsort(slength)
+        index = list(np.argsort(slength))
+        sfilenames = [sfilenames[k] for k in index]
+        srods = [srods[k] for k in index]
+        ssem_data = ssem_data[index,:]
         slength = slength[index]
         swidth = swidth[index]
+        sparams = sparams[index]
+        sfits_data = sfits_data[index,:]
+        sfits_footer = [sfits_footer[k] for k in index]
         sfrequency = sfrequency[index]
         sdamping_time = sdamping_time[index]
         squality_factor = squality_factor[index]
@@ -195,58 +195,120 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
     quality_factor.append(squality_factor)
     if load_sem:
         sem_data.append(ssem_data)
-        sem_footer.append(ssem_footer)
         length.append(slength)
         width.append(swidth)
     
+del s, ss, f
 del sfilenames, srods, sfits_data, sfits_footer, sfrequency, sdamping_time
-del squality_factor, ssem_data, ssem_footer, slength, swidth
+del squality_factor, sparams
+if load_sem:
+    del ssem_data, ssem_footer, slength, swidth
 
 #%%
 
-"""
+# Now lets discard rods that aren't in all of the samples
+remove_rods = []
+for j in range(len(rods)):
+    for j2 in range(len(rods)):
+        if j2 != j:
+            for r in rods[j]:
+                if r not in rods[j2]:
+                    remove_rods.append(r)
+del j, j2
 
-### HASTA ACÁ LLEGUÉ
+nfilenames = []
+nrods = []
+if load_sem:
+    nsem_data = []
+    nlength = []
+    nwidth = []
+nparams = []
+nfits_data = []
+nfits_footer = []
+nfrequency = []
+ndamping_time = []
+nquality_factor = []
+for j in range(len(rods)):
+    index = []
+    for r in rods[j]:
+        if r not in remove_rods:
+            index.append(rods[j].index(r))
+    nfilenames.append([filenames[j][k] for k in index])
+    nrods.append([rods[j][k] for k in index])
+    if load_sem:
+        nsem_data.append(sem_data[j][index,:])
+        nlength.append(length[j][index])
+        nwidth.append(width[j][index])
+    nparams.append(params[j][index])
+    nfits_data.append(fits_data[j][index,:])
+    nfits_footer.append([fits_footer[j][k] for k in index])
+    nfrequency.append(frequency[j][index])
+    ndamping_time.append(damping_time[j][index])
+    nquality_factor.append(quality_factor[j][index])
+    del index
+del j
 
-tables = []
+filenames = nfilenames[0]
+rods = nrods[0]
+if load_sem:
+    sem_data = nsem_data
+    length = nlength
+    width = nwidth
+params = nparams
+fits_data = nfits_data
+fits_footer = nfits_footer
+frequency = nfrequency
+damping_time = ndamping_time
+quality_factor = nquality_factor
+del nfilenames, nrods, nparams, nfits_data, nfits_footer, nfrequency
+del ndamping_time, nquality_factor
+if load_sem:
+    del nsem_data, nlength, nwidth
 
-for i, s, fs in zip(range(len(series)), series, full_series):
+#%%
+
+# Make OneNote table
+heading = '\t'.join(["Rod", "Longitud (nm)", "Error (nm)", 
+                     "Frecuencia Aire (GHz)", "Frecuencia Ta2O5 (GHz)",
+                     "Factor de calidad Aire", "Factor de calidad Ta2O5"])
+items = []
+for r in range(len(rods)):
     
-    # Prepare important data for a table 
-    items = []
-    for i in range(len(rods)):
-        h = '\t'.join(ivu.errorValue(sem_dataDSAGASDGGD[i,2], sem_data[i,3]))
-        ra = '\t'.join(ivu.errorValue(sem_data[i,4], sem_data[i,5], one_point_scale=True))
-        items.append('\t'.join([h, ra, 
-                                "{:.2f}".format(fits_data[i,0]), 
-                                 "{:.1f}".format(fits_data[i,2])]))
-    del i, h, ra
-    
-    # Make OneNote table
-    heading = '\t'.join(["Longitud (nm)", "Error (nm)", 
-                         "Relación de aspecto", "Error",
-                         "Frecuencia (GHz)", "Factor de calidad"])
-    items = ['\t'.join([n, r]) for n, r in zip(rods, items)]
-    items = '\n'.join(items)
-    heading = '\t'.join(['Rod', heading])
-    tables.append('\n'.join([heading, items]))
-    del heading, items
-    
-    # Save all important data to a single file
-    whole_filename = os.path.join(home, r'Análisis/Resultados_Totales_{}.txt'.format(series))
-    whole_data = np.array([*sem_data[:,:6].T, fits_data[:,0], 
-                           fits_data[:,1], fits_data[:,2]])
-    ivs.saveTxt(whole_filename, whole_data.T, 
-                header=["Ancho (nm)", "Error (nm)",
-                        "Longitud (nm)", "Error (nm)", 
-                        "Relación de aspecto", "Error",
-                        "Frecuencia (GHz)", "Tiempo de decaimiento (ps)",
-                        "Factor de calidad"],
-                footer=dict(rods=rods, filenames=filenames),
-                overwrite=True)
-    del whole_data, whole_filename
+    h = '\t'.join(ivu.errorValue(sem_data[0][r,2], sem_data[0][r,3]))
+    auxf = []
+    for j in range(len(full_series)):
+        auxf.append('{:.2f}'.format(fits_data[j][r,0]))
+    auxf = '\t'.join(auxf)
+    auxt = []
+    for j in range(len(full_series)):
+        auxt.append('{:.2f}'.format(fits_data[j][r,1]))
+    auxt = '\t'.join(auxt)
+    items.append('\t'.join([h, auxf, auxt]))
+del h, auxf, auxt
+items = ['\t'.join([r, i]) for r, i in zip(rods, items)]
+items = '\n'.join(items)
+table = '\n'.join([heading, items])
+ivu.copy(table)
+
+# Save all important data to a single file
+whole_filename = os.path.join(home, figs_folder, 'Resultados_Comparados.txt')
+whole_data = np.array([*sem_data[0][:,:6].T, fits_data[0][:,0], 
+                       fits_data[1][:,0], fits_data[0][:,1], 
+                       fits_data[1][:,1], fits_data[0][:,2],
+                       fits_data[1][:,2]])
+ivs.saveTxt(whole_filename, whole_data.T, 
+            header=["Ancho (nm)", "Error (nm)",
+                    "Longitud (nm)", "Error (nm)", 
+                    "Relación de aspecto", "Error",
+                    *["Frecuencia {} (GHz)".format(fs) for fs in full_series], 
+                    *["Tiempo de decaimiento {} (GHz)".format(fs) 
+                        for fs in full_series],
+                    *["Factor de calidad {} (GHz)".format(fs) 
+                        for fs in full_series]],
+            footer=dict(rods=rods, filenames=filenames),
+            overwrite=True)
+del whole_data, whole_filename
    
-"""
 #%% *) FREQUENCY PER ROD
 
 # Plot results for the different rods
@@ -262,7 +324,7 @@ ax1.legend(full_series)
 plt.show()
 
 # Format graph
-plt.xticks(np.arange(len(rods[0])), rods[0], rotation='vertical')
+plt.xticks(np.arange(len(rods)), rods, rotation='vertical')
 plt.grid(which='both', axis='x')
 ax1.tick_params(length=2)
 ax1.grid(axis='x', which='minor')
@@ -299,16 +361,16 @@ ax.tick_params(axis='y', direction='in')
 ivs.saveFig(figsFilename('Boxplots'), extension=figs_extension, 
             folder=figs_folder, overwrite=overwrite)
 
-#%% *) FREQUENCY AND LENGTH FIT
+#%% *) FREQUENCY AND LENGTH FIT FOR FIRST CASE
 
 if load_sem:
-    young_gold = iva.nonLinearFit(length[fit_series], frequency[fit_series], 
+    young_gold = iva.nonLinearFit(length[0], frequency[0], 
                                   f_simple, showplot=False)[-1][0]
     print(r"Módulo de Young: {}".format(ivu.errorValueLatex(*young_gold, 
                                                             units="Pa")))
-    chi_squared = sum( (f_simple(length[fit_series],
-                                 young_gold[0]) - frequency[fit_series])**2 ) 
-    chi_squared = chi_squared / len(length[fit_series])
+    chi_squared = sum( (f_simple(length[0],
+                                 young_gold[0]) - frequency[0])**2 ) 
+    chi_squared = chi_squared / len(length[0])
 
 #%% *) FREQUENCY AND LENGTH
 # --> Final plots of F vs L
@@ -321,12 +383,13 @@ plt.ylabel('Frecuencia (GHz)')
 plt.xlabel('Longitud (nm)')
 plt.plot(length[0]*1e9, frequency[0]*1e-9,'ok', label=full_series[0])
 plt.plot(length[1]*1e9, frequency[1]*1e-9, 'xb', label=full_series[1])
-plt.plot(length[fit_series]*1e9, 
-         1e-9*f_simple(length[fit_series], young_gold[0]), 
-         '-r', 
-         label=r"Ajuste en vacío con {}".format(ivu.errorValueLatex(
-                 *young_gold, 
-                 units="Pa")))
+if load_sem:
+    plt.plot(length[0]*1e9, 
+             1e-9*f_simple(length[0], young_gold[0]), 
+             '-r', 
+             label=r"Ajuste en vacío con {}".format(ivu.errorValueLatex(
+                     *young_gold, 
+                     units="Pa")))
 ax.minorticks_on()
 ax.tick_params(axis='y')
 ax.tick_params(axis='y', which='minor', length=0)
@@ -342,3 +405,10 @@ ivs.saveFig(figsFilename('PlotSuperFinal'), extension=figs_extension,
 Multiple legends on the same Axes
 https://matplotlib.org/users/legend_guide.html
 """
+
+#%% *) SOME STATISTICS IN NUMBERS
+
+frequency_stats = []
+# Max, min, mean, 
+for i, s in enumerate(full_series):
+    aux = {}
