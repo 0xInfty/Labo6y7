@@ -23,8 +23,8 @@ overwrite = False
 
 # Plot parameters
 plot_params = dict(
-        plot = False,
-        interactive = False,
+        plot = True,
+        interactive = True,
         autoclose = True,
         extension = '.png'
         )
@@ -32,14 +32,14 @@ plot_params = ivu.InstancesDict(plot_params)
 
 # Fit parameters
 fit_params = dict(
-        use_full_mean = False,
-        use_experiments = [10], # First is 0, not 1!
+        use_full_mean = True,
+        use_experiments = [1], # First is 0, not 1!
         send_tail_to_zero = False,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
         use_fraction = .2,
         choose_t0 = True,
         choose_tf = False,
-        max_svalues = 15,
+        max_svalues = 20,
         )
 fit_params = ivu.InstancesDict(fit_params)
 
@@ -57,18 +57,17 @@ if plot_params.plot:
                                         overwrite=True
                                         )
 
-"""
-# Several plots
+""" TO PLOT SEVERAL FITS
 import os
 path = os.path.split(filename)[0]
 ivp.plotAllPumpProbe(path,
                      autoclose=plot_params.autoclose,
                      extension=plot_params.extension,
                      autosave=autosave,
-                     overwrite=overwrite)
+                     overwrite=True)
 """
 
-#% LINEAR PREDICTION -------------------------------------------------------------
+#%% LINEAR PREDICTION -------------------------------------------------------------
 
 # Load data
 t, V, details = ivs.loadNicePumpProbe(filename)
@@ -113,7 +112,7 @@ results, other_results, plot_results = iva.linearPrediction(
 if autosave:
     ivs.linearPredictionSave(filename, results, other_results, fit_params,
                              overwrite=overwrite)
-
+ 
 # Plot linear prediction
 ivp.linearPredictionPlot(filename, plot_results, 
                          autosave=autosave,
@@ -121,5 +120,19 @@ ivp.linearPredictionPlot(filename, plot_results,
                          overwrite=overwrite)
 
 # Generate fit tables
+""" TO LOAD OTHER FIT
+fit_name = 'M_20191119_01'
+
+fit_filename = ivs.filenameToFitsFilename(fit_name, home=home)
+results, header, footer = ivs.loadTxt(fit_filename)
+
+other_results_keys = ['Nsingular_values', 'chi_squared']
+other_results = {k: footer[k] for k in other_results_keys}
+fit_params = dict(footer)
+for k in other_results_keys:
+    fit_params.pop(k)
+fit_params = ivu.InstancesDict(fit_params)
+del footer
+"""
 tables = iva.linearPredictionTables(fit_params, results, other_results)
 ivu.copy(tables[0])
