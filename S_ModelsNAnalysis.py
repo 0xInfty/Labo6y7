@@ -111,10 +111,9 @@ def f_andrea(length, young, factor):
 
 def f_iv(length, young, factor):
     f_0 = f_simple(length, young)
-    beta = ( Viscosity / (length * density) )**2 / 2
     K1_term = factor * K1 / ( np.pi**2 * density * area )
-    K2_subterm = factor * K2 / ( 2 * np.pi * density * area )
-    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+    K2_subterm = factor * K2 / ( 4 * np.pi * density * area )
+    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm)**2 )
     return f
 
 def f_test(length, young, shear):
