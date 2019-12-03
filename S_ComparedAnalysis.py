@@ -15,7 +15,7 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-home = r'C:\Users\quimica\Documents\Laboratorio\Profesores\Valeria Pais\Facu\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
 load_sem = True
 filter_not_in_common_rods = True
 
@@ -51,7 +51,7 @@ overwrite = True
 physics = {}
 physics['density_gold'] = 19.3e3 # kg/m3 for gold
 physics['shear_fsilica'] = np.mean([30.8e9, 32.3e9]) # Pa for fused silica
-physics['diameter'] = 27.7e-9 # m for rods
+physics['diameter'] = 27.53e-9 # m for rods
 physics['midlength'] = 85e-9 # m for rods
 physics['viscosity_gold'] = 2e-3 # Pa/s for gold
 physics['young_gold'] = np.mean([71.2e9, 74.8e9])  # Pa for fused silica
@@ -489,6 +489,31 @@ def f_iv_fsilica(length, young):
                  ( 2 * np.pi * physics['density_gold'] * physics['area'] ) )
     f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
     return f
+
+#%%
+
+physics['diameter'] = np.mean(width)
+physics['area'] = np.pi * physics['diameter']**2 / 4
+
+def G_ivan_ta2o5(ta2o5_frequency, air_frequency):
+    num = (ta2o5_frequency**2 - air_frequency**2) * 4 * np.pi**2
+    den = 2.75 / (physics['density_gold'] * physics['area'])
+    den = den - ( ( (np.pi * physics['diameter']) / (2 * physics['density_gold'] * 
+                 physics['area']))**2 )* physics['density_ta2o5']
+    return num/den
+
+G = G_ivan_ta2o5(frequency[1], frequency[0])
+
+print("G = {} +- {}".format(*ivu.errorValue(np.mean(G),np.std(G),units='Pa')))
+
+# Let's study if the approximation was valid
+physics['length'] = np.mean(length)
+beta_term = np.pi**2 * physics['viscosity_gold'] / (
+        2 * physics['length']**2 * physics['density_gold'])
+K2_term = np.pi * physics['length'] * np.sqrt(
+        physics['density_ta2o5'] * np.mean(G)) / (
+        2 * physics['density_gold'] * physics['area'])
+print("K2 term is {:.2f} times bigger than Beta term".format(K2_term/beta_term))
 
 #%% *) FREQUENCY AND LENGTH - DO NOT USE AGAIN LIGHTLY!
 
