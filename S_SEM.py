@@ -12,8 +12,8 @@ import os
 
 # Parameters
 home = r'C:\Users\Vall\OneDrive\Labo 6 y 7'
-path = os.path.join(home, r'Muestras\SEM\M135\7B\1D')
-series = 'M135_7B_1D'
+path = os.path.join(home, r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Muestras\SEM\LIGO5bis\1')
+series = 'LIGO5bis_1'
 
 # Load data
 rwidth = []
