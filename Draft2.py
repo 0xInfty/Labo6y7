@@ -12,34 +12,37 @@ from scipy.optimize import curve_fit
 
 #%% DATA
 
-new_file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\ComparedAnalysis_FusedSilica/Resultados_Comparados.txt'
-#file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1_bis.txt'
-#file2 = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1_PostUSA.txt'
+file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO5bis.txt'
+file2 = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1.txt'
 
 # Load data
-new_data, header, footer = ivs.loadTxt(new_file)
-#data, header, footer = ivs.loadTxt(file)
-#data2, header, footer = ivs.loadTxt(file2)
-
-#this_data = np.array([x, y]).T
+data, header, footer = ivs.loadTxt(file)
+data2, header, footer = ivs.loadTxt(file2)
 
 # Parameters
 
 rhoAu = 19.3e3 # kg/m3
 rhoTa = 8.18e3 # kg/m3
 Viscosity = 2e-3 # Pa/s for gold
+young = 63.942079 * 1e9 #Pa/s
 
-r = new_data[:,0] * 1e-9 / 2
-#r  = data[:, 0] * 1e-9 / 2    #radius
+r = data[:,0] * 1e-9 / 2
 A  = np.pi*(r**2)
-L = new_data[:,2]
-#L  = data[:, 2] * 1e-9 # from nm to m
-#L2 = data2[:, 2] * 1e-9 # from nm to m
+L  = data[:, 2] * 1e-9 # from nm to m
+L2 = data2[:, 2] * 1e-9 # from nm to m
 
-#w0 = data[:, 6] * 2 * np.pi * 1e9 # from ps to s
-#w  = data2[:,6] * 2 * np.pi * 1e9 # from ps to s
-w0 = new_data[:, 6] * 2 * np.pi * 1e9 # from ps to s
-w  = new_data[:,7] * 2 * np.pi * 1e9 # from ps to s
+w0 = data[:, 6] * 1e9 # from ps to s
+w  = data2[:,6] * 1e9 # from ps to s
+
+index = np.argsort(w)
+L2 = L2[index[4:]]
+w = w[index[4:]]
+
+newL = np.array(list(L)+list(L2))
+L = newL
+
+neww = np.array(list(w0)+list(w))
+w0 = neww
 
 # Order data
 index = np.argsort(L)
@@ -49,45 +52,43 @@ L = L[index]
 #L2 = L2[index2]
 
 w0 = w0[index]
-w = w[index]
 #w  = w[index2]
 
-r = r[index]
+#r = r[index]
 
 #%% Expresions
 
-G = (w**2 - w0**2) / ( 2.75/(rhoAu*A) - (np.pi*r/(rhoAu*A))**2 * rhoTa )
+G = (w**2 - w0**2) / ( 2.75/(rhoAu*A) - (np.pi*r/(rhoAu*A))**2 * rhoTa )        #surrounded rod for gamma = 0
+#w0 = (1/(2*L))*((young/rhoAu)**(1/2))                                           #free rod
 
 
 #%% FIT
 
 # Define function to use while fitting
-def freerod(L, young):
+def freerod(L,young):
     return (1/(2*L))*((young/rhoAu)**(1/2))
 
-def surroundedrod(w0,K1):
-    return 
+#def surroundedrod(w0,K1):
+#    return 
     
 # Fit
-popt, pcov = curve_fit(surroundedrod,L,w,p0=10)
+popt, pcov = curve_fit(freerod,L,w0,p0=78)
 print (popt *1e-9)
 
 #%% PLOT
 
-x=
-y=
+x=L
+y=w0
 
 # Plot
 plt.figure()
-ax = plt.subplot()
-plt.plot(x , y , 'o''r')
-plt.plot(x , freerod(x,popt))
+plt.plot(x * 1e9 , y * 1e-9 , 'o''r')
+plt.plot(L2 * 1e9 , w * 1e-9 , 'o''b')
+plt.plot(L * 1e9, freerod(L,popt) * 1e-9, 'k')
+#plt.plot(x , freerod(x,popt))
 plt.xlabel('Longitud $L$ (m)')
-plt.ylabel(r'frecuencia $GHz$ (s)')
+plt.ylabel(r'Frecuencia (GHz)')
 plt.title(r'Frecuencia vs Longitud')
-plt.legend(['En aire', 'En Ta2O5'])
-plt.grid(axis='x', which = 'both')
-ax.minorticks_on()
-ax.tick_params(axis='y', which='minor', left=False)
-ax.tick_params(length=5)
-ax.grid(axis='x', which='both')
+plt.legend(['Ta2O5', 'SiO2','ajuste'])
+plt.grid()
+
