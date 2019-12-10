@@ -16,14 +16,14 @@ import iv_analysis_module as iva
 
 # Main folder's path
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
-desired_frequency = 16 # in GHz
+desired_frequency = 8 # in GHz
 
 # Path to a list of filenames and rods to analize
 
-rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1_PostUSA.txt')
-sem_series = ['LIGO1_1']
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO5bis.txt')
+sem_series = ['LIGO5bis_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
-name = 'LIGO1_PostUSA'
+name = 'LIGO5bis'
 """
 rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']
