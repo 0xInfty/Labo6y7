@@ -353,7 +353,7 @@ def filenameToFitsFilename(filename, home=os.getcwd()):
 #%%
 
 def linearPredictionSave(filename, results, other_results, fit_parameters, 
-                         overwrite=False):
+                         folder='Ajustes', overwrite=False):
     
     """Saves the data from a linear prediction fit on '.txt' file.
     
@@ -410,7 +410,7 @@ def linearPredictionSave(filename, results, other_results, fit_parameters,
             header=["F (GHz)", "Tau (ps)", "Q", "A (u.a.)", "Phi (pi rad)"],
             footer=footer,
             overwrite=overwrite, 
-            folder='Ajustes')
+            folder=folder)
     
     return
 
