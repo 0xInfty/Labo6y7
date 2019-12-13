@@ -19,11 +19,11 @@ home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
 
 # Save parameters
 autosave = True
-overwrite = False
+overwrite = True
 
 # Plot parameters
 plot_params = dict(
-        plot = True,
+        plot = False,
         interactive = True,
         autoclose = True,
         extension = '.png'
@@ -45,7 +45,7 @@ fit_params = dict(
 fit_params = ivu.InstancesDict(fit_params)
 
 # Create full filename
-filename = ivs.filenameToMeasureFilename(name, home)
+filename = ivs.filenameToMeasureFilename(name, home=home)
 
 #%% PLOT --------------------------------------------------------------------------
 
@@ -54,11 +54,13 @@ if plot_params.plot:
     fig, legb, savb = ivp.plotPumpProbe(filename,
                                         interactive=plot_params.interactive, 
                                         extension=plot_params.extension,
-                                        autosave=autosave,
-                                        overwrite=True
+                                        autosave=False,
+                                        overwrite=True,
+#                                        loc='upper right'
                                         )
 
-""" TO PLOT SEVERAL FITS
+if False: print(
+""" TO PLOT SEVERAL MEASUREMENTS
 import os
 path = os.path.split(filename)[0]
 ivp.plotAllPumpProbe(path,
@@ -67,6 +69,7 @@ ivp.plotAllPumpProbe(path,
                      autosave=autosave,
                      overwrite=True)
 """
+    )
 
 #%% LINEAR PREDICTION -------------------------------------------------------------
 
@@ -130,19 +133,5 @@ ivp.linearPredictionPlot(filename, plot_results,
                          overwrite=overwrite)
 
 # Generate fit tables
-""" TO LOAD OTHER FIT
-fit_name = 'M_20191119_01'
-
-fit_filename = ivs.filenameToFitsFilename(fit_name, home=home)
-results, header, footer = ivs.loadTxt(fit_filename)
-
-other_results_keys = ['Nsingular_values', 'chi_squared']
-other_results = {k: footer[k] for k in other_results_keys}
-fit_params = dict(footer)
-for k in other_results_keys:
-    fit_params.pop(k)
-fit_params = ivu.InstancesDict(fit_params)
-del footer
-"""
 tables = iva.linearPredictionTables(fit_params, results, other_results)
 ivu.copy(tables[0])
