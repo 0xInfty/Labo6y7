@@ -35,11 +35,13 @@ f  = data2[:,6] * 1e9 # from ps to s
 
 #RESULTS
 youngAu = 82.20e+9     #Pa/s      (Popt)
-sigmayoungAu = 1.2e+09 #Young error [Pa/s]
+stdyoungAuu = 1.2e+09 #Young error [Pa/s]
 
 youngTa = 63.942e+9     #Pa/s      (Popt)
-sigmayoungTa = 0.94e9   #Young error [Pa/s]
+stdyoungTa = 0.94e9   #Young error [Pa/s]
 
+G = 33.82e9
+stdG= 16.33e9
 # Order data
     
 index = np.argsort(L)#[2:]         elimina los 2 primeros números
@@ -80,7 +82,7 @@ print (popt *1e-9,sigma *1e-9)
 
 #%% PLOT
 
-x = np.linspace(L[0],L2[-1],1000)
+x = np.linspace(L[0],L[-1],1000)
 x2 = np.linspace(L2[0],L2[-1],1000)
 
 # Plot
@@ -89,21 +91,20 @@ plt.figure()
 plt.plot(L * 1e9 , f0 * 1e-9 , 'x''r')
 plt.plot(L2 * 1e9 , f *  1e-9 , 'x''b')
 plt.plot(x * 1e9 , freerod(x,youngAu) * 1e-9, 'r')
-plt.plot(x * 1e9 , freerod(x,youngTa) * 1e-9, 'b')
+#plt.plot(x * 1e9 , freerod(x,youngTa) * 1e-9, 'b')
  
 plt.xlabel('Longitud $L$ (nm)')
 plt.ylabel(r'Frecuencia (GHz)')
 plt.title(r'Frecuencia vs Longitud')
-plt.legend(['En SiO2', 'ajuste','En Ta2O5', 'ajuste'])
+plt.legend(['En aire', 'En Ta2O5', 'ajuste'])
 
 ax = plt.subplot()
-plt.xticks()
-plt.yticks()
+
 ax.minorticks_on()
-ax.tick_params(axis='y', fhich='minor', left=False)
+ax.tick_params(axis='y', which='minor', left=False)
 ax.tick_params(length=5)
-ax.grid(axis='x', fhich='both')
-plt.grid(axis='y', fhich = 'both')
+ax.grid(axis='x', which='both')
+plt.grid(axis='y', which = 'both')
 
 #%% HISTOGRAM
 plt.figure()
@@ -114,11 +115,10 @@ del patches
 # Add curve over it
 x = np.linspace(np.min(bins), np.max(bins), 50)
 plt.plot(x,st.norm.pdf(x,np.mean(G)*1e-9,np.std(G)*1e-9),'k')
-plt.vlines(x=32.6341121726834,ymin=ax.get_ylim()[0],ymax=ax.get_ylim()[1])
-# Format plot
-plt.xlabel("")
-plt.ylabel(r"Densidad de probabilidad $\int f(F) dF = 1$")
+plt.vlines(x=32.6341121726834,ymin=ax.get_ylim()[0],ymax=ax.get_ylim()[1],linestyles='dashed')
+plt.vlines(x=np.mean(G)*1e-9,ymin=ax.get_ylim()[0],ymax=ax.get_ylim()[1],linestyles='solid')
 
 # Format plot
-plt.xlabel("Frecuencia F (GHz)")
+plt.xlabel("Módulo de corte G (GPa)")
 plt.ylabel(r"Densidad de probabilidad $\int f(F) dF = 1$")
+plt.legend(['Gaussiana asociada', 'G promediado','Valor medio'])
