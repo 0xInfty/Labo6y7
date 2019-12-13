@@ -15,13 +15,8 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
-<<<<<<< HEAD
-home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
-desired_frequency = 12 # in GHz
-=======
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
 desired_frequency = 8 # in GHz
->>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 # Path to a list of filenames and rods to analize
 

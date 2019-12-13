@@ -14,13 +14,8 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
-<<<<<<< HEAD
-name = 'M_20191115_11'
-home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
-=======
 name = 'M_20191129_01'
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
->>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 # Save parameters
 autosave = True
@@ -84,10 +79,6 @@ t, V, details = ivs.loadNicePumpProbe(filename)
 # Choose time interval to fit
 if fit_params.choose_t0: # Choose initial time t0
     t0 = ivp.interactiveTimeSelector(filename, autoclose=plot_params.autoclose)
-<<<<<<< HEAD
-    
-=======
->>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
     t, V = iva.cropData(t0, t, V)
 else:
     try:
