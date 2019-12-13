@@ -10,6 +10,33 @@ import iv_save_module as ivs
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+<<<<<<< HEAD
+
+
+# Parameters
+density = 19300 # kg/m3
+file = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1.txt'
+file2 = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1_PostUSA.txt'
+# Load data
+data, header, footer = ivs.loadTxt(file)
+data2, header2, footer2 = ivs.loadTxt(file2)
+
+length = data[:, 2] * 1e-9 # from nm to m
+length2 = data2[:, 2] * 1e-9 # from nm to m
+
+#damping_time = data[:, 7] * 1e-12 # from ps to s
+#this_data = np.array([length, damping_time]).T
+
+# Order data
+index = np.argsort(length)
+index2 = np.argsort(length2)
+
+length = length[index]
+length2 = length2[index2]
+
+damping_time = damping_time[index]
+this_data = this_data[index, :]
+=======
 #%% DATA
 
 new_file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\ComparedAnalysis_FusedSilica/Resultados_Comparados.txt'
@@ -58,6 +85,7 @@ r = r[index]
 
 G = (w**2 - w0**2) / ( 2.75/(rhoAu*A) - (np.pi*r/(rhoAu*A))**2 * rhoTa )
 
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 #%% FIT
 
@@ -74,20 +102,48 @@ print (popt *1e-9)
 
 #%% PLOT
 
+<<<<<<< HEAD
+x1 = length
+y1 = data[:, 6]
+x2 = length2
+y2 = data2[:, 6]
+
+#x1 = length
+#y1 = damping_time
+
+#x2 = x1
+#y2 = tau_function(length, fit_viscosity[0])
+
+
+=======
 x=
 y=
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 # Plot
 plt.figure()
 ax = plt.subplot()
+<<<<<<< HEAD
+plt.plot(x1 , y1 , 'o''r')
+plt.plot(x2, y2 , 'o''b')
+=======
 plt.plot(x , y , 'o''r')
 plt.plot(x , freerod(x,popt))
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 plt.xlabel('Longitud $L$ (m)')
 plt.ylabel(r'frecuencia $GHz$ (s)')
 plt.title(r'Frecuencia vs Longitud')
 plt.legend(['En aire', 'En Ta2O5'])
 plt.grid(axis='x', which = 'both')
+<<<<<<< HEAD
+
+=======
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 ax.minorticks_on()
 ax.tick_params(axis='y', which='minor', left=False)
 ax.tick_params(length=5)
 ax.grid(axis='x', which='both')
+<<<<<<< HEAD
+
+=======
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
