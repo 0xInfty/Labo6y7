@@ -8,96 +8,117 @@ Created on Tue Aug 13 14:34:41 2019
 import numpy as np
 import iv_save_module as ivs
 import matplotlib.pyplot as plt
+import scipy.stats as st
 from scipy.optimize import curve_fit
 
 #%% DATA
 
-file = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO5bis.txt'
-file2 = r'F:\Pump-Probe\Iván y Valeria\OneDrive\Labo 6 y 7\Análisis\Resultados_Totales_LIGO1.txt'
+file = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7\Informe L7\Datos Iván\Resultados_Comparados_LIGO1.txt'
+file2 = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7\Informe L7\Datos Iván\Resultados_Comparados_LIGO1_PostUSA.txt'
 
 # Load data
-data, header, footer = ivs.loadTxt(file)
-data2, header, footer2 = ivs.loadTxt(file2)
+data, header, footer = ivs.loadTxt(file) # In air
+data2, header, footer2 = ivs.loadTxt(file2) # In Ta2O5
 
 # Parameters
-
-
 rhoAu = 19300       # kg/m3
 rhoTa = 8180        # kg/m3
 gammaAu = 2e-3      # Pa/s
-
-young = 63.942079 * 1e9 #Pa/s
 
 r = data[:,0] * 1e-9 / 2
 A  = np.pi*(r**2)
 L  = data[:, 2] * 1e-9 # from nm to m
 L2 = data2[:, 2] * 1e-9 # from nm to m
 
-w0 = data[:, 6] * 1e9 # from ps to s
-w  = data2[:,6] * 1e9 # from ps to s
+f0 = data[:, 6] * 1e9 # from ps to s
+f  = data2[:,6] * 1e9 # from ps to s
 
+#RESULTS
+youngAu = 82.20e+9     #Pa/s      (Popt)
+sigmayoungAu = 1.2e+09 #Young error [Pa/s]
 
-index = np.argsort(w)
-L2 = L2[index[4:]]
-w = w[index[4:]]
-
-newL = np.array(list(L)+list(L2))
-L = newL
-
-neww = np.array(list(w0)+list(w))
-w0 = neww
+youngTa = 63.942e+9     #Pa/s      (Popt)
+sigmayoungTa = 0.94e9   #Young error [Pa/s]
 
 # Order data
-index = np.argsort(L)
+    
+index = np.argsort(L)#[2:]         elimina los 2 primeros números
 index2 = np.argsort(L2)
 
 L = L[index]
-w0 = w0[index]
+f0 = f0[index]
 
-w  = w[index2]
+f  = f[index2]
 L2 = L2[index2]
 
-young=78.43854513*1e9
-sigmayoung=3.18683486e+09
+r = r[index]
+A = A[index]
 
 #%% Expresions
 
-G = (w**2 - w0**2) / ( 2.75/(rhoAu*A) - (np.pi*r/(rhoAu*A))**2 * rhoTa )        #surrounded rod for gamma = 0
-w0 = (1/(2*L))*((young/rhoAu)**(1/2))                                           #free rod
-w = (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-(d*np.pi*np.sqrt(rhoTa*G)/(2*rhoAu*A)+(np.pi**2*gammaAu/(2*L2**2*rhoAu)))**2)
+G = ((f*2*np.pi)**2 - (f0*2*np.pi)**2) / ( 2.75/(rhoAu*A) - (((np.pi*r)/(rhoAu*A))**2)*rhoTa )        #surrounded rod for gamma = 0
+Gmeaned = ((np.mean(f)*2*np.pi)**2 - (np.mean(f0)*2*np.pi)**2) / ( 2.75/(rhoAu*np.mean(A)) - (((np.pi*np.mean(r))/(rhoAu*np.mean(A)))**2)*rhoTa )        #surrounded rod for gamma = 0
 
-
+f0 = (1/(2*L))*((youngAu/rhoAu)**(1/2))                                         #free rod
+f = (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(youngAu/rhoAu)+((G*2.75)/(rhoAu*A))-(2*r*np.pi*np.sqrt(rhoTa*G)/(2*rhoAu*A)+(np.pi**2*gammaAu/(2*L2**2*rhoAu)))**2)
+                                                                                #surrounded rod
+print(np.mean(G)*1e-9)
+print(np.std(G)*1e-9)
+print(Gmeaned*1e-9)
 #%% FIT
 
 def freerod(L, young):
     return ((1/(2*L)))*(young/rhoAu)**(1/2)
 
-def surroundedrod(L2,G):
-    return (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-((np.pi**2*gammaAu/(2*L2**2*rhoAu)))**2)
+def surroundedrod(L,G):
+    return (1/(2*np.pi))*np.sqrt((((1/(2*L)))**2)*(youngAu/rhoAu)+((G*2.75)/(rhoAu*A))-((np.pi**2*gammaAu/(2*L**2*rhoAu)))**2)
     
 # Fit
-popt, pcov = curve_fit(surroundedrod,L2,w,p0=3006)
-print (popt *1e-9)
-
+popt, pcov = curve_fit(freerod,L,f0)
+sigma = np.sqrt(np.diag(pcov))
+print (popt *1e-9,sigma *1e-9)
 
 #%% PLOT
+
+x = np.linspace(L[0],L2[-1],1000)
+x2 = np.linspace(L2[0],L2[-1],1000)
+
 # Plot
-G=3e26
 plt.figure()
 
-ax = plt.subplot()
-plt.plot(x * 1e9 , y * 1e-9 , 'o''r')
-plt.plot(L2 * 1e9 , w *  1e-9 , 'o''b')
-plt.plot(L * 1e9, freerod(L,popt) * 1e-9, 'k')
-#plt.plot(x , freerod(x,popt))
-
-plt.xlabel('Longitud $L$ (m)')
+plt.plot(L * 1e9 , f0 * 1e-9 , 'x''r')
+plt.plot(L2 * 1e9 , f *  1e-9 , 'x''b')
+plt.plot(x * 1e9 , freerod(x,youngAu) * 1e-9, 'r')
+plt.plot(x * 1e9 , freerod(x,youngTa) * 1e-9, 'b')
+ 
+plt.xlabel('Longitud $L$ (nm)')
 plt.ylabel(r'Frecuencia (GHz)')
 plt.title(r'Frecuencia vs Longitud')
-plt.legend(['En Ta2O5', 'ajuste','En aire', 'ajuste'])
+plt.legend(['En SiO2', 'ajuste','En Ta2O5', 'ajuste'])
 
-plt.grid(axis='x', which = 'both')
+ax = plt.subplot()
+plt.xticks()
+plt.yticks()
 ax.minorticks_on()
-ax.tick_params(axis='y', which='minor', left=False)
+ax.tick_params(axis='y', fhich='minor', left=False)
 ax.tick_params(length=5)
-ax.grid(axis='x', which='both')
+ax.grid(axis='x', fhich='both')
+plt.grid(axis='y', fhich = 'both')
+
+#%% HISTOGRAM
+plt.figure()
+ax = plt.subplot()
+n, bins, patches = plt.hist(G*1e-9, bins = 5, density=True,alpha=0.8, facecolor='blue', rwidth=0.95)
+del patches
+
+# Add curve over it
+x = np.linspace(np.min(bins), np.max(bins), 50)
+plt.plot(x,st.norm.pdf(x,np.mean(G)*1e-9,np.std(G)*1e-9),'k')
+plt.vlines(x=32.6341121726834,ymin=ax.get_ylim()[0],ymax=ax.get_ylim()[1])
+# Format plot
+plt.xlabel("")
+plt.ylabel(r"Densidad de probabilidad $\int f(F) dF = 1$")
+
+# Format plot
+plt.xlabel("Frecuencia F (GHz)")
+plt.ylabel(r"Densidad de probabilidad $\int f(F) dF = 1$")
