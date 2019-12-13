@@ -15,15 +15,20 @@ import iv_analysis_module as iva
 #%% PARAMETERS ----------------------------------------------------------------
 
 # Main folder's path
+<<<<<<< HEAD
 home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
 desired_frequency = 12 # in GHz
+=======
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+desired_frequency = 8 # in GHz
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 # Path to a list of filenames and rods to analize
 
-rods_filename = os.path.join(home, r'Análisis\Rods_LIGO1_PostUSA.txt')
-sem_series = ['LIGO1_1']
+rods_filename = os.path.join(home, r'Análisis\Rods_LIGO5bis.txt')
+sem_series = ['LIGO5bis_1']
 sem_short_series = lambda series : '{}'#series.split('_')[1]+' {}'
-name = 'LIGO1_PostUSA'
+name = 'LIGO5bis'
 """
 rods_filename = os.path.join(home, r'Análisis\Rods_M135.txt')
 sem_series = ['M135_5_1D', 'M135_7B_1D']
@@ -111,10 +116,9 @@ def f_andrea(length, young, factor):
 
 def f_iv(length, young, factor):
     f_0 = f_simple(length, young)
-    beta = ( Viscosity / (length * density) )**2 / 2
     K1_term = factor * K1 / ( np.pi**2 * density * area )
-    K2_subterm = factor * K2 / ( 2 * np.pi * density * area )
-    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm + beta/np.pi)**2/4 )
+    K2_subterm = factor * K2 / ( 4 * np.pi * density * area )
+    f = np.sqrt(f_0**2 + K1_term/4 - (K2_subterm)**2 )
     return f
 
 def f_test(length, young, shear):

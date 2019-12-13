@@ -14,16 +14,21 @@ import numpy as np
 #%% PARAMETERS -------------------------------------------------------------------
 
 # Parameters
+<<<<<<< HEAD
 name = 'M_20191115_11'
 home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
+=======
+name = 'M_20191129_01'
+home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
 
 # Save parameters
 autosave = True
-overwrite = False
+overwrite = True
 
 # Plot parameters
 plot_params = dict(
-        plot = True,
+        plot = False,
         interactive = True,
         autoclose = True,
         extension = '.png'
@@ -34,17 +39,18 @@ plot_params = ivu.InstancesDict(plot_params)
 fit_params = dict(
         use_full_mean = True,
         use_experiments = [1], # First is 0, not 1!
-        send_tail_to_zero = False,
+        send_tail_to_zero = True,
         tail_method = 'mean', # Could also be 'min' or 'max' or any numpy function
-        use_fraction = .2,
+        use_fraction = .1,
         choose_t0 = True,
         choose_tf = False,
+        svalues = None,
         max_svalues = 20,
         )
 fit_params = ivu.InstancesDict(fit_params)
 
 # Create full filename
-filename = ivs.filenameToMeasureFilename(name, home)
+filename = ivs.filenameToMeasureFilename(name, home=home)
 
 #%% PLOT --------------------------------------------------------------------------
 
@@ -53,11 +59,13 @@ if plot_params.plot:
     fig, legb, savb = ivp.plotPumpProbe(filename,
                                         interactive=plot_params.interactive, 
                                         extension=plot_params.extension,
-                                        autosave=autosave,
-                                        overwrite=True
+                                        autosave=False,
+                                        overwrite=True,
+#                                        loc='upper right'
                                         )
 
-""" TO PLOT SEVERAL FITS
+if False: print(
+""" TO PLOT SEVERAL MEASUREMENTS
 import os
 path = os.path.split(filename)[0]
 ivp.plotAllPumpProbe(path,
@@ -66,6 +74,7 @@ ivp.plotAllPumpProbe(path,
                      autosave=autosave,
                      overwrite=True)
 """
+    )
 
 #%% LINEAR PREDICTION -------------------------------------------------------------
 
@@ -75,15 +84,24 @@ t, V, details = ivs.loadNicePumpProbe(filename)
 # Choose time interval to fit
 if fit_params.choose_t0: # Choose initial time t0
     t0 = ivp.interactiveTimeSelector(filename, autoclose=plot_params.autoclose)
+<<<<<<< HEAD
     
+=======
+>>>>>>> f6d51826c79ecf4d1460fbecbe1da8ba138be943
     t, V = iva.cropData(t0, t, V)
 else:
-    t0 = t[0]
+    try:
+        t, V = iva.cropData(t0, t, V)
+    except NameError:
+        t0 = t[0]
 if fit_params.choose_tf: # Choose final time tf
     tf = ivp.interactiveTimeSelector(filename, autoclose=plot_params.autoclose)
     t, V = iva.cropData(tf, t, V, logic='<=')
 else:
-    tf = t[-1]
+    try:
+        t, V = iva.cropData(tf, t, V, logic='<=')
+    except NameError:
+        tf = t[-1]
 fit_params.time_range = (t0, tf)
 del t0, tf
 
@@ -99,7 +117,10 @@ if fit_params.send_tail_to_zero:
     V0 = function(data[int( (1-fit_params.use_fraction) * len(data)):])
     del function
 else:
-    V0 = 0
+    try:
+        V0
+    except NameError:
+        V0 = 0
 data = data - V0
 fit_params.voltage_zero = V0
 del V0
@@ -107,6 +128,7 @@ del V0
 # Use linear prediction
 results, other_results, plot_results = iva.linearPrediction(
     t, data, details['dt'],
+    svalues=fit_params.svalues,
     max_svalues=fit_params.max_svalues,
     autoclose=plot_params.autoclose)
 if autosave:
@@ -120,19 +142,5 @@ ivp.linearPredictionPlot(filename, plot_results,
                          overwrite=overwrite)
 
 # Generate fit tables
-""" TO LOAD OTHER FIT
-fit_name = 'M_20191119_01'
-
-fit_filename = ivs.filenameToFitsFilename(fit_name, home=home)
-results, header, footer = ivs.loadTxt(fit_filename)
-
-other_results_keys = ['Nsingular_values', 'chi_squared']
-other_results = {k: footer[k] for k in other_results_keys}
-fit_params = dict(footer)
-for k in other_results_keys:
-    fit_params.pop(k)
-fit_params = ivu.InstancesDict(fit_params)
-del footer
-"""
 tables = iva.linearPredictionTables(fit_params, results, other_results)
 ivu.copy(tables[0])

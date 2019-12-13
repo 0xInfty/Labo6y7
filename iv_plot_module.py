@@ -15,7 +15,7 @@ from tkinter import Tk, messagebox
 #%%
 
 def interactiveLegend(ax, labels=False, show_default=True, 
-                      location='best', **kwargs):
+                      loc='best', **kwargs):
 
     """Adds an interactive save button to a given figure.
     
@@ -29,7 +29,7 @@ def interactiveLegend(ax, labels=False, show_default=True,
     show_default=True : bool, list
         If not bool, the list of boolean values that say whether to show at 
         first or not the different lines that are plotted.
-    location='best' : str
+    loc='best' : str
         A string that indicates where to add the legend on the plot area. 
         Can be 'best', 'upper right', 'upper left', 'lower right', 
         'lower left'.
@@ -81,7 +81,7 @@ def interactiveLegend(ax, labels=False, show_default=True,
         y0 = kwargs.pop('y0')
     except:
         y0 = (.03, .81)
-    if location=='best':
+    if loc=='best':
         xmin = min([min(l.get_data()[0]) for l in lines])
         xmax = max([max(l.get_data()[0]) for l in lines])
         ymin = min([min(l.get_data()[1]) for l in lines])
@@ -89,20 +89,20 @@ def interactiveLegend(ax, labels=False, show_default=True,
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
         if abs(ymin-ylim[0]) > abs(ymax-ylim[1]):
-            location = 'lower '
+            loc = 'lower '
         else:
-            location = 'upper '
+            loc = 'upper '
         if abs(xmin-xlim[0]) > abs(xmax-xlim[1]):
-            location = location + 'left'
+            loc = loc + 'left'
         else:
-            location = location + 'right'
-    if location=='upper right':
+            loc = loc + 'right'
+    if loc=='upper right':
         position = [x0[1] - extra_x, y0[1] - extra_y, width, height]
-    elif location=='upper left':
+    elif loc=='upper left':
         position = [x0[0] + extra_x, y0[1] - extra_y, width, height]
-    elif location=='lower right':
+    elif loc=='lower right':
         position = [x0[1] - extra_x, y0[0] + extra_y, width, height]
-    elif location=='lower left':
+    elif loc=='lower left':
         position = [x0[0] + extra_x, y0[0] + extra_y, width, height]
     else:
         raise ValueError("Unvalid legend location")
@@ -621,7 +621,7 @@ def plotAllPumpProbe(path, extension='.png', autosave=True, autoclose=False,
 #%%
     
 def linearPredictionPlot(filename, plot_results, extension='.png', 
-                         autosave=True, overwrite=False,
+                         folder='Figuras', autosave=True, overwrite=False,
                          showgrid=False):
 
     """Plots the results of a linear prediction plot.
@@ -637,6 +637,8 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
         terms' spectrum.
     extension='.png' : str
         Image file's format.
+    folder='Figuras' : str
+        Folder to include in figure's filename.
     autosave=True : bool
         Says whether to save or not.
     overwrite=False : bool
@@ -732,7 +734,7 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
     
     # Since I can, I would also like an interactive 'Save' button
     save_button = interactiveSaveButton(filename, overwrite=overwrite, 
-                                        folder='Figuras', sufix='_fit')
+                                        folder=folder, sufix='_fit')
     
     # Once I have all that, I'll show the plot
     plt.show()
@@ -740,7 +742,7 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
     # Like it is shown for the first time, autosave if configured that way
     if autosave:
         save_button.ax.set_visible(False)
-        ivs.saveFig(filename, overwrite=overwrite, folder='Figuras', 
+        ivs.saveFig(filename, overwrite=overwrite, folder=folder, 
                     sufix='_fit')
         save_button.ax.set_visible(True)
         

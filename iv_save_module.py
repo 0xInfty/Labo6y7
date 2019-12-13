@@ -327,24 +327,35 @@ def loadNicePumpProbe(filename):
 
 #%%
 
-def filenameToMeasureFilename(filename, home=os.getcwd()):
+def filenameToDate(filename):
     
-    """Given a filename 'M_20190610_01', returns path to fits' data"""
+    """Given a filename 'M_20190610_01', returns date on '2019-06-10' format"""
     
     date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
     date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
+    
+    return date
+ 
+#%%
+
+def filenameToMeasureFilename(filename, 
+                              home=os.getcwd()):
+    
+    """Given a filename 'M_20190610_01', returns path to fits' data"""
+    
+    date = filenameToDate(filename) # Transfrom to '2019-06-10'
     fits_filename = os.path.join(home, 'Mediciones', date, filename+'.txt')
     
     return fits_filename
 
 #%%
 
-def filenameToFitsFilename(filename, home=os.getcwd()):
+def filenameToFitsFilename(filename,
+                           home=os.getcwd()):
     
     """Given a filename 'M_20190610_01', returns path to fits' data"""
     
-    date = filename.split('_')[1] # From 'M_20190610_01' take '20190610'
-    date = '-'.join([date[:4], date[4:6], date[6:]]) # Transfrom to '2019-06-10'
+    date = filenameToDate(filename) # Transfrom to '2019-06-10'
     fits_filename = os.path.join(home, 'Mediciones', date, 
                                  'Ajustes', filename+'.txt')
     
@@ -409,7 +420,7 @@ def linearPredictionSave(filename, results, other_results, fit_parameters,
     saveTxt(filename, results,
             header=["F (GHz)", "Tau (ps)", "Q", "A (u.a.)", "Phi (pi rad)"],
             footer=footer,
-            overwrite=overwrite, 
+            overwrite=overwrite,
             folder='Ajustes')
     
     return
