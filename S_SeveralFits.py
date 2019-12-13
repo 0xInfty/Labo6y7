@@ -17,11 +17,11 @@ import os
 #%% LINEAR PREDICTION REPRISE
 
 # Parameters
-name = 'M_20191129_03'
+name = 'M_20191018_11'
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
-nexperiments = 10
-groups_mode = 'comb' # Combinations 'comb', each experiment by its own 'own'
-series = 'CombinationsOf3'
+nexperiments = 4
+groups_mode = 'own' # Combinations 'comb', each experiment by its own 'own'
+series = 'Power'
 
 # Save parameters
 path = os.path.join(home, 'Análisis', series + '_' + name)

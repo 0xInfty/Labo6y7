@@ -16,18 +16,19 @@ import scipy.stats as st
 #%% LINEAR PREDICTION REPRISE
 
 # Filenames' Parameters
-name = 'M_20191129_03'
+name = 'M_20191018_11'
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
-series = 'CombinationsOf3'
+series = 'Power' # 'CombinationsOf3' # 'EachOneByItsOwn'
 path = os.path.join(home, 'Análisis', series + '_' + name)
 
 # Experiments' Parameters
-nexperiments = 10
-groups_mode = 'comb' # Combinations 'comb', each experiment by its own 'own'
+nexperiments = 4
+groups_mode = 'own' # Combinations 'comb', each experiment by its own 'own'
 
 # Analysis' Parameters
-desired_frequency = 13 # GHz
+desired_frequency = 18 # GHz
 max_frequency_deviation = 3 # GHz
+nbins = 2
 
 if False: print("""CombinationsOf3 / EachOneByItsOwn
                 M_20191129...  01) 17.5 GHz\
@@ -166,7 +167,7 @@ print(r"Frecuencia: {}".format(
         ivu.errorValueLatex(np.mean(frequency), 
                             np.std(frequency), 
                             symbol='±',
-                            units="Pa")))
+                            units="Hz")))
 print(r"Tiempo de decaimiento: {}".format(
         ivu.errorValueLatex(np.mean(damping_time), 
                             np.std(damping_time), 
@@ -178,10 +179,9 @@ print(r"Chi cuadrado: {}".format(
                             symbol='±',
                             units="V²")))
 
-#%% MAKE HISTOGRAM WITH A CURVE
+#%% HISTOGRAM WITH A CURVE
 
 # Plot parameters
-nbins = 20
 color = 'blue'
 index = frequency.argsort()
 
@@ -200,6 +200,7 @@ plt.plot(x,
 del index
 
 # Format plot
+plt.title('{} ({})'.format(series, name))
 plt.xlabel("Frecuencia F (GHz)")
 plt.ylabel(r"Densidad de probabilidad $\int f(F) dF = 1$")
 
@@ -220,7 +221,7 @@ if False: print(
 By default, then the area below the curve is equal to 1.
 """)
 
-#%% MAKE BOXPLOT
+#%% BOXPLOT
 
 fig = plt.figure()
 grid = plt.GridSpec(1, 2, wspace=0.5, hspace=0)
@@ -247,3 +248,31 @@ ax.tick_params(axis='y', direction='in')
 
 # Save plot
 ivs.saveFig(filenameMaker('Boxplots.png'), overwrite=True)
+
+#%% PLOT
+
+# Plot results for the different rods
+fig, ax1 = plt.subplots()
+plt.title('{} ({})'.format(series, name))
+
+# Frequency plot, right axis
+ax1.set_xlabel('Repetición')
+ax1.set_ylabel('Frecuencia (GHz)', color='tab:red')
+ax1.plot(frequency*1e-9, 'ro')
+ax1.tick_params(axis='y', labelcolor='tab:red')
+
+# Quality factor, left axis
+ax2 = ax1.twinx()  # Second axes that shares the same x-axis
+ax2.set_ylabel('Tiempo de decaimiento (ps)', color='tab:blue')
+ax2.plot(damping_time*1e12, 'bx')
+ax2.tick_params(axis='y', labelcolor='tab:blue')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+
+# Format graph
+plt.grid(which='both', axis='x')
+ax1.tick_params(length=2)
+ax1.grid(axis='x', which='both')
+
+# Save plot
+ivs.saveFig(filenameMaker('FyTau.png'), overwrite=True)
