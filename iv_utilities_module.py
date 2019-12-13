@@ -311,7 +311,7 @@ def errorValue(X, dX, error_digits=2, units='',
 
 #%%
 
-def errorValueLatex(X, dX, error_digits=2, units='',
+def errorValueLatex(X, dX, error_digits=2, symbol='$\pm$', units='',
                     string_scale=True, one_point_scale=False):
     
     """Rounds up value and error of a measure. Also makes a latex string.
@@ -392,7 +392,7 @@ def errorValueLatex(X, dX, error_digits=2, units='',
         order = findNumbers(string_format[0])[0]
         unit = ''
     
-    latex_string = r'({}$\pm${})'.format(measure, error)
+    latex_string = r'({}{}{})'.format(measure, symbol, error)
     if order!=0:
         latex_string = latex_string + r'$10^{' + str(order) + r'}$' + unit
     else:
