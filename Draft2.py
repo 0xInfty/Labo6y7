@@ -27,7 +27,7 @@ rhoAu = 19300       # kg/m3
 rhoTa = 8180        # kg/m3
 gammaAu = 2e-3      # Pa/s
 
-d  = data[:, 0]
+d  = data2[:, 0]
 r  = d/2   
 A  = np.pi*(r**2)
 L  = data[:, 2] * 1e-9 # from nm to m
@@ -43,10 +43,10 @@ index = np.argsort(L)
 index2 = np.argsort(L2)
 
 L = L[index]
-L2 = L2[index2]
-
 w0 = w0[index]
+
 w  = w[index2]
+L2 = L2[index2]
 
 young=78.43854513*1e9
 sigmayoung=3.18683486e+09
@@ -54,24 +54,29 @@ sigmayoung=3.18683486e+09
 G=4.32155921e+28
 YG=43215.5921
 sigmaG=1.90824023e+27
+
+G=432
 #%% FIT
+
+#modelo megacompleto
+#   (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-(d*np.pi*np.sqrt(rhoTa*G)/(2*rhoAu*A)+(np.pi**2*gammaAu/(2*L2**2*rhoAu)))**2)
 
 # Define function to use while fitting
 def freerod(L, young):
     return ((1/(2*L)))*(young/rhoAu)**(1/2)
 
 def surroundedrod(L2,G):
-    return (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-(d*np.pi*np.sqrt(rhoTa*G)+(np.pi**2*gammaAu/(2*L**2*rhoAu)))**2)
+    return (1/(2*np.pi))*np.sqrt((((1/(2*L2)))**2)*(young/rhoAu)+((G*2.75)/(rhoAu*A))-((np.pi**2*gammaAu/(2*L2**2*rhoAu)))**2)
     
 # Fit
-popt, pcov = curve_fit(surroundedrod,L2,w,p0=3.66931003e+28)
+popt, pcov = curve_fit(surroundedrod,L2,w,p0=3006)
 print (popt)
 
 sigma=np.sqrt(np.diag(pcov))
 print (sigma)
 #%% PLOT
 # Plot
-
+G=3e26
 plt.figure()
 ax = plt.subplot()
 
