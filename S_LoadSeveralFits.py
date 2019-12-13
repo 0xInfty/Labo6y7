@@ -48,7 +48,7 @@ if groups_mode == 'comb':
     experiments_groups = [list(c) for c in comb(list(range(nexperiments)), 3)]
 elif groups_mode == 'own':
     # Take each experiment on its own
-    experiments_groups = [[i] for i in range(10)]
+    experiments_groups = [[i] for i in range(nexperiments)]
 
 #%% LOAD DATA
 
