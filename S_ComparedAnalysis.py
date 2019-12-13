@@ -7,7 +7,9 @@ Created on Wed Oct 30 09:58:43 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 import os
+import scipy.stats as st
 import iv_save_module as ivs
 import iv_utilities_module as ivu
 import iv_analysis_module as iva
@@ -17,7 +19,7 @@ import iv_analysis_module as iva
 # Main folder's path
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
 load_sem = True
-filter_not_in_common_rods = False
+filter_not_in_common_rods = True
 
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 16]#, 8] # in GHz
@@ -434,6 +436,91 @@ ivs.saveFig(figsFilename('Boxplots'), extension=figs_extension,
 
 """UP TO THERE IT'S ALL GENERIC. FROM HERE ON... JUST FUSED SILICA + AIR (0)
 VS FUSED SILICA + TA2O5 (1)"""
+
+#%% *) FREQUENCY ON SAME RODS
+
+nbins = 10
+set_bigger_percent = 20
+
+if filter_not_in_common_rods:
+    
+    fig = plt.figure()
+    grid = plt.GridSpec(4, 5, wspace=0, hspace=0)
+#    fig.set_figheight(fig.get_figwidth())
+    
+    ax = plt.subplot(grid[1:,:-1])
+    ax.plot(frequency[0]*1e-9, frequency[1]*1e-9, 'xk', markersize=7)
+    plt.xlabel("Frecuencia {} (GHz)".format(full_series[0]))
+    plt.ylabel("Frecuencia {} (GHz)".format(full_series[1]))
+    
+    # Grid's format
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    ax.grid(which='major', axis='both')
+    ax.grid(which='minor', axis='both', linestyle=':')
+    
+    # Limits' format
+    xlims = ax.get_xlim()
+    ylims = ax.get_ylim()
+    delta_xlims = xlims[1] - xlims[0]
+    delta_ylims = ylims[1] - ylims[0]
+    new_xlims = (xlims[0] - delta_xlims*set_bigger_percent/100,
+                 xlims[1] + delta_xlims*set_bigger_percent/100)
+    new_ylims = (ylims[0] - delta_ylims*set_bigger_percent/100,
+                 ylims[1] + delta_ylims*set_bigger_percent/100)
+    ax.set_xlim(new_xlims)
+    ax.set_ylim(new_ylims)
+    new_lims = [new_xlims, new_ylims]
+    new_lims_T = [new_ylims, new_xlims]
+    
+    # Identity
+    frequency_linspaces = [np.linspace(nl[0], nl[1], 50) for nl in new_lims]
+    ax.plot(frequency_linspaces[0], frequency_linspaces[0], '-k')
+    
+    # Mean values
+    line_functions = [plt.vlines, plt.hlines]
+    colors = ['blue', 'red']
+    for i in range(2):
+        line_functions[i](np.mean(frequency[i])*1e-9, 
+                          *new_lims_T[i], colors=colors[i], linestyle='--')
+    del i
+    
+    # Standard deviation
+    fill_function = [ax.fill_betweenx, ax.fill_between]
+    for i in range(2):
+        fill_function[i](new_lims_T[i], 
+                         (np.mean(frequency[i])-np.std(frequency[i]))*1e-9,
+                         (np.mean(frequency[i])+np.std(frequency[i]))*1e-9,
+                         color=colors[i],
+                         alpha=0.1)
+    
+    # Histograms
+    axh = []
+    limsh = []
+    grid_places = [grid[0,:-1], grid[1:,-1]]
+    orientations = ['vertical', 'horizontal']
+    function_lims = [plt.xlim, plt.ylim]
+    function_lims_T = [plt.ylim, plt.xlim]
+    normal_distributions = [st.norm.pdf(flins, np.mean(f)*1e-9, np.std(f)*1e-9)
+                            for f, flins in zip(frequency, frequency_linspaces)]
+    normal_pairs = [[flins, ndist] for flins, ndist 
+                    in zip(frequency_linspaces, normal_distributions)]
+    normal_pairs[1].reverse()
+    for i in range(2):
+        axh.append(plt.subplot(grid_places[i]))        
+        # Histogram
+        n, b, p = axh[i].hist(frequency[i]*1e-9, nbins, density=True,
+                              alpha=0.4, facecolor=colors[i],                               orientation=orientations[i])
+        # Curve over histogram
+        axh[i].plot(*normal_pairs[i], color=colors[i])    
+        # Format
+        axh[i].axis('off')
+        function_lims[i](new_lims[i])
+        limsh.append(function_lims_T[i]())
+        # Mean values
+        line_functions[i](np.mean(frequency[i])*1e-9, *limsh[i], 
+                          colors=colors[i], linestyle='--')     
+    del i
 
 #%% *) FREQUENCY AND LENGTH FIT ON AIR (Eef) - DO NOT USE AGAIN LIGHTLY!
 
