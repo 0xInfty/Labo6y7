@@ -16,10 +16,15 @@ import iv_analysis_module as iva
 
 #%% PARAMETERS ----------------------------------------------------------------
 
-# Main folder's path
+# Saving parameters
 home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+figs_extension = '.png'
+overwrite = True
+
+# Analysis Parameters
 load_sem = True
 filter_not_in_common_rods = True
+filter_air_outliers = False
 
 # For each data to compare, we need one value on each list
 desired_frequency = [12, 16]#, 8] # in GHz
@@ -30,6 +35,15 @@ series = ['LIGO1', 'LIGO1_PostUSA']#, 'LIGO5bis']
 sem_series = ['LIGO1_1', 'LIGO1_1']#, 'LIGO5bis_1'] # ['nan']
 sem_full_series = ['L1 1', 'L1 1']#, 'L5bis 1']
 name = 'FusedSilica' # 'All'
+
+#%% OTHERS PARAMETERS ---------------------------------------------------------
+
+# Some more strings
+filter_conditions = ''
+if filter_not_in_common_rods:
+    filter_conditions += '_CommonRods'
+elif filter_air_outliers:
+    filter_conditions += '_NoOutliers'
 
 # Some functions and variables to manege filenames
 def semFilename(sem_series, home=home):
@@ -45,9 +59,8 @@ paramsFilename = lambda series : os.path.join(home,
                                               r'Análisis\Params_{}.txt'.format(
                                                    series))
 figsFilename = lambda fig_name : os.path.join(home, fig_name+'.png')
-figs_folder = r'Análisis\ComparedAnalysis_{}'.format(name) #ComparedAnalysis_{}'.format(name)
-figs_extension = '.png'
-overwrite = True
+figs_folder = r'Análisis\ComparedAnalysis{}_{}'.format(filter_conditions,
+                                                       name)
 
 #%% PHYSICS -------------------------------------------------------------------
 
@@ -151,15 +164,22 @@ for s, ss, f in zip(series, sem_series, desired_frequency):
         swidth = ssem_data[:,0] * 1e-9 # m
         del index
     
-#    # Now we can filter the results
-#    index = np.argsort(sfrequency) # Remove the two lowest frequencies
-#    if load_sem:
-#       slength = slength[index[2:]]
-#       swidth = swidth[index[2:]]
-#    sfrequency = sfrequency[index[2:]]
-#    sdamping_time = sdamping_time[index[2:]]
-#    squality_factor = squality_factor[index[2:]]
-#    del index
+    # Now we can filter the results
+    if s == 'LIGO1' and filter_air_outliers:
+        index = np.argsort(sfrequency)[2:] # Remove the two lowest frequencies
+        sfilenames = [sfilenames[k] for k in index]
+        srods = [srods[k] for k in index]
+        if load_sem:
+            ssem_data = ssem_data[index,:]
+            slength = slength[index]
+            swidth = swidth[index]
+        sparams = sparams[index]
+        sfits_data = sfits_data[index,:]
+        sfits_footer = [sfits_footer[k] for k in index]
+        sfrequency = sfrequency[index]
+        sdamping_time = sdamping_time[index]
+        squality_factor = squality_factor[index]
+        del index
     
     # Since I'll be analysing frequency vs length mostly...
     if load_sem:
@@ -380,7 +400,7 @@ if filter_not_in_common_rods:
 
 else:
 
-    for j, fs in enumerate(full_series):
+    for j, s, fs in zip(range(len(series)), series, full_series):
     
         # Plot results for the different rods
         fig, ax1 = plt.subplots()
@@ -402,7 +422,7 @@ else:
         plt.show()
         
         # Save plot
-        ivs.saveFig(figsFilename('FvsRod_{}'.format(fs)), 
+        ivs.saveFig(figsFilename('FvsRod_{}'.format(s)), 
                     extension=figs_extension, 
                     folder=figs_folder, overwrite=overwrite)
 
@@ -472,11 +492,7 @@ if filter_not_in_common_rods:
     ax.set_ylim(new_ylims)
     new_lims = [new_xlims, new_ylims]
     new_lims_T = [new_ylims, new_xlims]
-    
-    # Identity
-    frequency_linspaces = [np.linspace(nl[0], nl[1], 50) for nl in new_lims]
-    ax.plot(frequency_linspaces[0], frequency_linspaces[0], '-k')
-    
+
     # Mean values
     line_functions = [plt.vlines, plt.hlines]
     colors = ['blue', 'red']
@@ -493,6 +509,102 @@ if filter_not_in_common_rods:
                          (np.mean(frequency[i])+np.std(frequency[i]))*1e-9,
                          color=colors[i],
                          alpha=0.1)
+    
+    # Histograms
+    axh = []
+    limsh = []
+    grid_places = [grid[0,:-1], grid[1:,-1]]
+    orientations = ['vertical', 'horizontal']
+    function_lims = [plt.xlim, plt.ylim]
+    function_lims_T = [plt.ylim, plt.xlim]
+    frequency_linspaces = [np.linspace(nl[0], nl[1], 50) for nl in new_lims]
+    normal_distributions = [st.norm.pdf(flins, np.mean(f)*1e-9, np.std(f)*1e-9)
+                            for f, flins in zip(frequency, frequency_linspaces)]
+    normal_pairs = [[flins, ndist] for flins, ndist 
+                    in zip(frequency_linspaces, normal_distributions)]
+    normal_pairs[1].reverse()
+    for i in range(2):
+        axh.append(plt.subplot(grid_places[i]))        
+        # Histogram
+        n, b, p = axh[i].hist(frequency[i]*1e-9, nbins, density=True,
+                              alpha=0.4, facecolor=colors[i],                               orientation=orientations[i])
+        # Curve over histogram
+        axh[i].plot(*normal_pairs[i], color=colors[i])    
+        # Format
+        axh[i].axis('off')
+        function_lims[i](new_lims[i])
+        limsh.append(function_lims_T[i]())
+        # Mean values
+        line_functions[i](np.mean(frequency[i])*1e-9, *limsh[i], 
+                          colors=colors[i], linestyle='--')     
+    del i
+
+    ivs.saveFig(figsFilename('FvsF0'), extension=figs_extension, 
+            folder=figs_folder, overwrite=overwrite)
+
+#%% *) FREQUENCY ON SAME RODS - ANDREA'S
+
+nbins = 10
+set_bigger_percent = 20
+
+if filter_not_in_common_rods:
+    
+    fig = plt.figure()
+    grid = plt.GridSpec(4, 5, wspace=0, hspace=0)
+#    fig.set_figheight(fig.get_figwidth())
+    
+    ax = plt.subplot(grid[1:,:-1])
+    ax.plot(frequency[0]*1e-9, frequency[1]*1e-9, 'ko', markersize=8, mfc='w')
+    plt.xlabel("Frecuencia {} (GHz)".format(full_series[0]))
+    plt.ylabel("Frecuencia {} (GHz)".format(full_series[1]))
+    
+    # Grid's format
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    ax.grid(which='major', axis='both')
+    ax.grid(which='minor', axis='both', linestyle=':')
+    
+    # Limits' format
+    xlims = ax.get_xlim() # GHz
+    ylims = ax.get_ylim() # GHz
+    delta_xlims = xlims[1] - xlims[0]
+    delta_ylims = ylims[1] - ylims[0]
+    new_xlims = (xlims[0] - delta_xlims*set_bigger_percent/100,
+                 xlims[1] + delta_xlims*set_bigger_percent/100)
+    new_ylims = (ylims[0] - delta_ylims*set_bigger_percent/100,
+                 ylims[1] + delta_ylims*set_bigger_percent/100)
+    ax.set_xlim(new_xlims)
+    ax.set_ylim(new_ylims)
+    new_lims = [new_xlims, new_ylims]
+    new_lims_T = [new_ylims, new_xlims]
+    
+    # Identity
+    frequency_linspaces = [np.linspace(nl[0], nl[1], 50) for nl in new_lims]
+    ax.plot(frequency_linspaces[0], frequency_linspaces[0], '-k')
+    
+    # Identity with mean difference vertical shift
+    delta_frequency = frequency[1] - frequency[0] # Hz
+    ax.plot(frequency_linspaces[0], 
+            frequency_linspaces[0] + np.mean(delta_frequency)*1e-9,
+            '--k')
+    
+    # Identity with mean difference standard deviation vertical shift
+    ax.fill_between(
+        frequency_linspaces[0], 
+        frequency_linspaces[0] + (np.mean(delta_frequency) 
+                - np.std(delta_frequency))*1e-9,
+        frequency_linspaces[0] + (np.mean(delta_frequency) 
+                + np.std(delta_frequency))*1e-9,
+        color='m',
+        alpha=0.2)
+    
+    # Mean values
+    line_functions = [plt.vlines, plt.hlines]
+    colors = ['blue', 'red']
+    for i in range(2):
+        line_functions[i](np.mean(frequency[i])*1e-9, 
+                          *new_lims_T[i], colors=colors[i], linestyle='--')
+    del i
     
     # Histograms
     axh = []
@@ -522,6 +634,9 @@ if filter_not_in_common_rods:
                           colors=colors[i], linestyle='--')     
     del i
 
+    ivs.saveFig(figsFilename('FvsF0Identity'), extension=figs_extension, 
+                folder=figs_folder, overwrite=overwrite)
+
 #%% *) FREQUENCY AND LENGTH FIT ON AIR (Eef) - DO NOT USE AGAIN LIGHTLY!
 
 # Experimental values
@@ -541,7 +656,7 @@ def f_simple(length, young):
 
 if load_sem:
     young_gold_effective = iva.nonLinearFit(length[0], frequency[0], 
-                                  f_simple, showplot=False)[-1][0]
+                                            f_simple, showplot=False)[-1][0]
     print(r"Módulo de Young: {}".format(ivu.errorValueLatex(
             *young_gold_effective, 
             units="Pa")))
@@ -549,92 +664,123 @@ if load_sem:
                                  young_gold_effective[0]) - frequency[0])**2 ) 
     chi_squared = chi_squared / len(length[0])
 
-#%% FREQUENCY AND LENGTH MODEL ON TA2O5 (G) - DO NOT USE AGAIN LIGHTLY!
+#%% *) FREQUENCY AND LENGTH FIT ON AIR (Eef PLOT) - DO NOT USE AGAIN LIGHTLY!
     
-def G_iv_ta2o5(ta2o5_frequency, air_frequency, width):
-    area = np.pi * width**2 / 4
-    num = (ta2o5_frequency**2 - air_frequency**2) * 4 * np.pi**2
-    den = 2.75 / (physics['density_gold'] * area)
-    den = den - ( ( (np.pi * width) / (2 * physics['density_gold'] * 
-                 area))**2 )* physics['density_ta2o5']
-    return num/den
+if load_sem:
 
-G = {r'No Mean [NM] ($F_i$, $d_i$)' : G_iv_ta2o5(frequency[1], 
-                                                 frequency[0], 
-                                                 width[0]),
-     r'Partial Mean [PM] ($F_i$, $\bar{d}$)' : G_iv_ta2o5(frequency[1], 
-                                                          frequency[0], 
-                                                          np.mean(width)),
-     r'All Mean [AM] ($\bar{F}$, $\bar{d}$)' : G_iv_ta2o5(np.mean(frequency[1]),
-                                                          np.mean(frequency[0]),
-                                                          np.mean(width))
-    }    
-full_name_key = lambda k : k[0 : k.find('[')-1]
-short_name_key = lambda k : k[k.find('[')+1 : k.find(']')]
-symbols_key = lambda k : k[k.find('(') : k.find(')')+1]
+    # Make a plot with fit and predictions
+    plt.figure()
+    ax = plt.subplot()
+    plt.title('Análisis de resultados')
+    plt.ylabel('Frecuencia (GHz)')
+    plt.xlabel('Longitud (nm)')
+    plt.plot(length[0]*1e9, frequency[0]*1e-9,'o', label=full_series[0])
+    plt.plot(length[0]*1e9, 
+             1e-9*f_simple(length[0], young_gold_effective[0]), 
+             '-r', 
+             label=r"Ajuste en vacío con {}".format(ivu.errorValueLatex(
+                         *young_gold_effective, 
+                         units="Pa")))
+    ax.minorticks_on()
+    ax.tick_params(axis='y')
+    ax.tick_params(axis='y', which='minor', length=0)
+    ax.grid(axis='both', which='both')
+    ax.legend()
+    plt.show()
+    
+    # Save plot
+    ivs.saveFig(figsFilename('YoungEfectivo'), extension=figs_extension, 
+                folder=figs_folder, overwrite=overwrite)
 
-for k in G.keys():
-    if 'AM' not in k:
-        print("G = {} +- {} for {} method".format(
-            *ivu.errorValue(np.mean(G[k]),np.std(G[k]),units='Pa'),
-            short_name_key(k)))
-    else:
-        print("G = {:.1f} GPa for AM method".format(G[k]/1e9))
+#%% FREQUENCY AND LENGTH MODEL ON TA2O5 (G) - DO NOT USE AGAIN LIGHTLY!
+
+if load_sem and filter_not_in_common_rods:
+    
+    def G_iv_ta2o5(ta2o5_frequency, air_frequency, width):
+        area = np.pi * width**2 / 4
+        num = (ta2o5_frequency**2 - air_frequency**2) * 4 * np.pi**2
+        den = 2.75 / (physics['density_gold'] * area)
+        den = den - ( ( (np.pi * width) / (2 * physics['density_gold'] * 
+                     area))**2 )* physics['density_ta2o5']
+        return num/den
+    
+    G = {r'No Mean [NM] ($F_i$, $d_i$)' : G_iv_ta2o5(frequency[1], 
+                                                     frequency[0], 
+                                                     width[0]),
+         r'All Mean [AM] ($\bar{F}$, $\bar{d}$)' : G_iv_ta2o5(np.mean(frequency[1]),
+                                                              np.mean(frequency[0]),
+                                                              np.mean(width))
+        }    
+    full_name_key = lambda k : k[0 : k.find('[')-1]
+    short_name_key = lambda k : k[k.find('[')+1 : k.find(']')]
+    symbols_key = lambda k : k[k.find('(') : k.find(')')+1]
+    
+    for k in G.keys():
+        if 'AM' not in k:
+            print("G = {} +- {} for {} method".format(
+                *ivu.errorValue(np.mean(G[k]),np.std(G[k]),units='Pa'),
+                short_name_key(k)))
+        else:
+            print("G = {:.1f} GPa for AM method".format(G[k]/1e9))
 
 #%% FREQUENCY AND LENGTH MODEL ON TA2O5 (BETA TERM) - DO NOT USE AGAIN LIGHTLY!
 
-# Let's study if the approximation was valid
-for k in G.keys():
-    beta_term = np.pi**2 * physics['viscosity_gold'] / (
-            2 * physics['length']**2 * physics['density_gold'])
-    K2_term = np.pi * physics['length'] * np.sqrt(
-            physics['density_ta2o5'] * np.mean(G[k])) / (
-            2 * physics['density_gold'] * physics['area'])
-    print("K2 term is {:.2f} times bigger than Beta term for {} method".format(
-            K2_term/beta_term,
-            short_name_key(k)))
+if load_sem and filter_not_in_common_rods:
+
+    # Let's study if the approximation was valid
+    for k in G.keys():
+        beta_term = np.pi**2 * physics['viscosity_gold'] / (
+                2 * physics['length']**2 * physics['density_gold'])
+        K2_term = np.pi * physics['length'] * np.sqrt(
+                physics['density_ta2o5'] * np.mean(G[k])) / (
+                2 * physics['density_gold'] * physics['area'])
+        print("K2 term is {:.2f} times bigger than Beta term for {} method".format(
+                K2_term/beta_term,
+                short_name_key(k)))
 
 #%% FREQUENCY AND LENGTH MODEL ON TA2O5 (PLOT) - DO NOT USE AGAIN LIGHTLY!
 
-def f_simple(length, young):
-    f_0 = (np.sqrt(young/physics['density_gold']) / (2 * length))
-    return f_0
+if load_sem and filter_not_in_common_rods:
 
-def f_iv_ta2o5(frequency_air, G_ta2o5):
-    K1_ta2o5 = G_ta2o5 * 2.75 # Pa
-    K2_ta2o5 = np.pi * physics['diameter']
-    aux = np.sqrt(physics['density_ta2o5'] * G_ta2o5) 
-    K2_ta2o5 = K2_ta2o5 * aux # Pa.s (viscosity's units)
-    K1_term = ( K1_ta2o5 / 
-              ( np.pi**2 * physics['density_gold'] * physics['area'] ) )
-    K2_subterm = ( K2_ta2o5 / 
-                 ( 2 * np.pi * physics['density_gold'] * physics['area'] ) )
-    f = np.sqrt(frequency_air**2 + K1_term/4 - (K2_subterm)**2/4 )
-    return f
-
-plt.figure()
-plt.plot(length[0]*1e9, frequency[1]/1e9, 'ok', label='Datos')
-plt.ylabel('Frecuencia f (GHz)')
-plt.xlabel('Longitud L (nm)')
-full_lines = []
-dotted_lines = []
-for k, c in zip(G.keys(), ['r', 'g', 'b']):
-    plt.plot(length[0]*1e9, f_iv_ta2o5(f_simple(length[0],
-                                                young_gold_effective[0]),
-                                       np.mean(G[k]))/1e9,
-             '-'+c,
-             label=r'Método $E_{ef}$ ' + symbols_key(k))[0]
-    plt.plot(length[0]*1e9, f_iv_ta2o5(frequency[0],
-                                       np.mean(G[k]))/1e9,
-             ':'+c,
-             label=r'Método $F$ ' + symbols_key(k))[0]
-plt.legend()
+    def f_simple(length, young):
+        f_0 = (np.sqrt(young/physics['density_gold']) / (2 * length))
+        return f_0
+    
+    def f_iv_ta2o5(frequency_air, G_ta2o5):
+        K1_ta2o5 = G_ta2o5 * 2.75 # Pa
+        K2_ta2o5 = np.pi * physics['diameter']
+        aux = np.sqrt(physics['density_ta2o5'] * G_ta2o5) 
+        K2_ta2o5 = K2_ta2o5 * aux # Pa.s (viscosity's units)
+        K1_term = ( K1_ta2o5 / 
+                  ( np.pi**2 * physics['density_gold'] * physics['area'] ) )
+        K2_subterm = ( K2_ta2o5 / 
+                     ( 2 * np.pi * physics['density_gold'] * physics['area'] ) )
+        f = np.sqrt(frequency_air**2 + K1_term/4 - (K2_subterm)**2/4 )
+        return f
+    
+    plt.figure()
+    plt.plot(length[0]*1e9, frequency[1]/1e9, 'ok', label='Datos')
+    plt.ylabel('Frecuencia f (GHz)')
+    plt.xlabel('Longitud L (nm)')
+    full_lines = []
+    dotted_lines = []
+    for k, c in zip(G.keys(), ['r', 'g', 'b']):
+        plt.plot(length[0]*1e9, f_iv_ta2o5(f_simple(length[0],
+                                                    young_gold_effective[0]),
+                                           np.mean(G[k]))/1e9,
+                 '-'+c,
+                 label=r'Método $E_{ef}$ ' + symbols_key(k))[0]
+        plt.plot(length[0]*1e9, f_iv_ta2o5(frequency[0],
+                                           np.mean(G[k]))/1e9,
+                 ':'+c,
+                 label=r'Método $F$ ' + symbols_key(k))[0]
+    plt.legend()
     
 #%% *) FREQUENCY AND LENGTH - DO NOT USE AGAIN LIGHTLY!
 
 # --> Final plots of F vs L
 
-if load_sem:
+if load_sem and filter_not_in_common_rods:
 
     # Make a plot with fit and predictions
     plt.figure()
@@ -670,11 +816,3 @@ if load_sem:
 Multiple legends on the same Axes
 https://matplotlib.org/users/legend_guide.html
 """
-
-#%% *) SOME STATISTICS IN NUMBERS
-
-frequency_stats = []
-# Max, min, mean, 
-for i, s in enumerate(full_series):
-    aux = {}
-del i, s
