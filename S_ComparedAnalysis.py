@@ -546,6 +546,9 @@ if filter_not_in_common_rods:
 
 nbins = 10
 set_bigger_percent = 20
+delta = max(frequency[1]) - min(frequency[0])
+lims = [(min(frequency[0]) - set_bigger_percent*delta/100) * 1e-9, 
+        (max(frequency[1]) + set_bigger_percent*delta/100) * 1e-9]
 
 if filter_not_in_common_rods:
     
@@ -565,18 +568,22 @@ if filter_not_in_common_rods:
     ax.grid(which='minor', axis='both', linestyle=':')
     
     # Limits' format
-    xlims = ax.get_xlim() # GHz
-    ylims = ax.get_ylim() # GHz
-    delta_xlims = xlims[1] - xlims[0]
-    delta_ylims = ylims[1] - ylims[0]
-    new_xlims = (xlims[0] - delta_xlims*set_bigger_percent/100,
-                 xlims[1] + delta_xlims*set_bigger_percent/100)
-    new_ylims = (ylims[0] - delta_ylims*set_bigger_percent/100,
-                 ylims[1] + delta_ylims*set_bigger_percent/100)
-    ax.set_xlim(new_xlims)
-    ax.set_ylim(new_ylims)
-    new_lims = [new_xlims, new_ylims]
-    new_lims_T = [new_ylims, new_xlims]
+#    xlims = ax.get_xlim() # GHz
+#    ylims = ax.get_ylim() # GHz
+#    delta_xlims = xlims[1] - xlims[0]
+#    delta_ylims = ylims[1] - ylims[0]
+#    new_xlims = (xlims[0] - delta_xlims*set_bigger_percent/100,
+#                 xlims[1] + delta_xlims*set_bigger_percent/100)
+#    new_ylims = (ylims[0] - delta_ylims*set_bigger_percent/100,
+#                 ylims[1] + delta_ylims*set_bigger_percent/100)
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    new_lims = [lims, lims]
+    new_lims_T = [lims, lims]
+#    ax.set_xlim(new_xlims)
+#    ax.set_ylim(new_ylims)
+#    new_lims = [new_xlims, new_ylims]
+#    new_lims_T = [new_ylims, new_xlims]
     
     # Identity
     frequency_linspaces = [np.linspace(nl[0], nl[1], 50) for nl in new_lims]
