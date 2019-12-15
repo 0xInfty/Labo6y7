@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 #%% DATA
 
-home = r'C:\Users\Valeria\OneDrive\Labo 6 y 7'
+home = r'C:\Users\Usuario\OneDrive\Labo 6 y 7\OneDrive\Labo 6 y 7'
 
 figs_folder = 'Informe L7\Figuras\Figuras análisis\Modelos L1 (G, E, etc)'
 data_folder = 'Informe L7\Datos Iván'
@@ -51,15 +51,15 @@ fL5 = data3[:,6] * 1e9
 dL5 = data3[:,0] * 1e-9
 LL5 = data3[:,2] * 1e-9
 
-# Results
-#youngAu = 82.20e+9     #Pa/s      (Popt)
-#stdyoungAu = 1.2e+09 #Young error [Pa/s]
-#
-#youngTa = 63.942e+9     #Pa/s      (Popt)
-#stdyoungTa = 0.94e9   #Young error [Pa/s]
-#
-#meanG = 33.82e9
-#stdG = 16.33e9
+#Results
+youngAu = 82.20e+9     #Pa/s      (Popt)
+stdyoungAu = 1.2e+09 #Young error [Pa/s]
+
+youngTa = 63.942e+9     #Pa/s      (Popt)
+stdyoungTa = 0.94e9  #Young error [Pa/s]
+
+meanG = 33.82e9         #Pa/s
+stdG = 16.33e9       #G error [Pa/s]
 
 # Order data  
 index = np.argsort(L)#[2:]         elimina los 2 primeros números
@@ -151,7 +151,10 @@ print('Young Au usando Ta2O5: ' +
 #%% PLOT
 
 x = np.linspace(L[0],L[-1],1000)
-x2 = np.linspace(L2[0],L2[-1],1000)
+xd= np.linspace(L[-1],LL5[-1],1000)
+
+x2 = np.linspace(LL5[0],LL5[-1],1000)
+x2d= np.linspace(L[0],LL5[0],1000)
 
 # Plot
 plt.figure()
@@ -159,40 +162,42 @@ ax = plt.subplot()
 
 data1, = plt.plot(L * 1e9, f0 * 1e-9 , 'x''r', markersize=7,
                   label='Fused Silica + Aire')
-data2, = plt.plot(L2 * 1e9, f *  1e-9 , 'x''b', markersize=7, 
-                  label=r'Fused Silica + Ta$_2$O$_5$')
-line1, = plt.plot(x * 1e9, Ffreerod(x, youngAuFS) * 1e-9, 'r', 
-                  label=('Ajuste Aire $E_{ef}$ = ' +
-                         ivu.errorValueLatex(youngAuFS, 
-                                             stdyoungAuFS, 
-                                             units='Pa')))
-line2, = plt.plot(x * 1e9, Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
-                                                np.mean(G), rhoTa) * 1e-9, 
-                 'b--',
-                 label=('Modelo Ta$_2$O$_5$ $G$ = ' +
-                        ivu.errorValueLatex(np.mean(G), np.std(G), units='Pa')))
-line3, = plt.plot(x * 1e9, Fsurroundedrod_fit(x, Gfit) * 1e-9, 
-                 'b',
-                 label=('Ajuste Ta$_2$O$_5$ $G$ = ' +
-                        ivu.errorValueLatex(Gfit, stdGfit, units='Pa')))
-ax.fill_between(x * 1e9, 
-                Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
-                                     np.mean(G) - np.std(G), rhoTa) * 1e-9,
-                Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
-                                     np.mean(G) + np.std(G), rhoTa) * 1e-9,
-                color='b',
-                alpha=0.1)
+line1, = plt.plot(x * 1e9, Ffreerod(x, youngAu) * 1e-9, 'r', linewidth=1.5,
+                  label=('Ajuste Aire $E_{ef}$ = ' + ivu.errorValueLatex(youngAuFS, stdyoungAuFS, units='Pa')))
+dashline1, = plt.plot(xd * 1e9, Ffreerod(xd, youngAu) * 1e-9, '--''r', linewidth=1.5)
+                      
+#line2, = plt.plot(x * 1e9, Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
+#                                                np.mean(G), rhoTa) * 1e-9, 
+#                 'b--',
+#                 label=('Modelo Ta$_2$O$_5$ $G$ = ' +
+#                        ivu.errorValueLatex(np.mean(G), np.std(G), units='Pa')))
+
+data3, = plt.plot(LL5 * 1e9, fL5 *  1e-9 , 'x''b', markersize=7, label=r'Ta$_2$O$_5$ + Aire')
+line3, = plt.plot(x2 * 1e9, Ffreerod(x2, youngTa) * 1e-9, 'b', linewidth=1.5,
+                 label=('Ajuste Ta$_2$O$_5$ $E_{ef}$ = ' + ivu.errorValueLatex(youngTa, stdyoungTa, units='Pa')))
+dashline3, = plt.plot(x2d * 1e9, Ffreerod(x2d, youngTa) * 1e-9, '--''b', linewidth=1.5)
+
+#ax.fill_between(x * 1e9, 
+#                Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
+#                                     np.mean(G) - np.std(G), rhoTa) * 1e-9,
+#                Fsurroundedrod_young(x, np.mean(d), youngAuFS, 
+#                                     np.mean(G) + np.std(G), rhoTa) * 1e-9,
+#                color='b',
+#                alpha=0.1)
  
 plt.xlabel('Longitud $L$ (nm)')
 plt.ylabel(r'Frecuencia $F$ (GHz)')
 plt.title(r'Frecuencia vs Longitud')
-leg = plt.legend(handles=[line1, line2, line3], loc='lower left')
+leg = plt.legend(handles=[line1, line3], loc='lower left')
 ax2 = plt.gca().add_artist(leg)
-plt.legend(handles=[data1, data2], loc='upper right')
+plt.legend(handles=[data1, data3], loc='upper right')
 
+ax = plt.subplot()
+plt.xticks()
+plt.yticks()
 ax.minorticks_on()
-ax.tick_params(axis='y', which='minor', left=False)
-ax.tick_params(length=5)
+#ax.tick_params(axis='y', which='minor', left=False)
+#ax.tick_params(length=5)
 ax.grid(axis='x', which='both')
 plt.grid(axis='y', which = 'both')
 
