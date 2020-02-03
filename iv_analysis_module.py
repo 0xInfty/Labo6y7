@@ -15,6 +15,33 @@ from scipy.optimize import curve_fit
 
 #%%
 
+def getValueError(values, errors=None):
+
+    """Given a np.array -and its error bars if known-, gives mean and error
+    
+    Parameters
+    ----------
+    values : np.array
+        Array of values.
+    errors : np.array
+        Array of known error bars.
+    
+    Returns
+    -------
+    (value, error) : tuple
+        Mean value and associated error.
+    """
+    
+    value = np.mean(values)
+    if errors is not None:
+        error = max(np.std(values), np.mean(errors))
+    else:
+        error = np.std(values)
+    
+    return (value, error)
+
+#%%
+
 def roundMatlab(x):
     
     """Returns round value in Matlab 2014's style.
@@ -109,6 +136,11 @@ def cropData(t0, t, *args, **kwargs):
     new_args = [t, *new_args]
     
     return new_args
+
+#%%
+
+def chiSquared(data, curve):
+    return sum(curve-data)**2 / len(data)
 
 #%%
 
@@ -729,9 +761,10 @@ def linearPrediction(t, x, dt, svalues=None, max_svalues=8,
     # Some other results I need to plot
     other_results = dict(chi_squared = chi_squared,
                          Nsingular_values = Nsignificant)
+    
     # And the data to plot
     plot_results = ivu.InstancesDict(dict(
-            fit = np.array([t, x, fit, *list(fit_terms.T)]).T, 
+            fit = np.array([t, x, fit, *list(fit_terms).T]).T,
             raman = np.array([raman_frequencies, raman_spectrum,
                               *list(raman_spectrum_terms.T)]).T))
     
