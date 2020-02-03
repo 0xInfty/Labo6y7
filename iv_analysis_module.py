@@ -762,9 +762,24 @@ def linearPrediction(t, x, dt, svalues=None, max_svalues=8,
     other_results = dict(chi_squared = chi_squared,
                          Nsingular_values = Nsignificant)
     
+    # Create nice data to plot
+    fit_plot_results = np.array([t, x, fit, *list(fit_terms.T)]).T
+    new_plot_fit_terms = []
+    for f, ft in zip(results[:,0], fit_plot_results[:,3:].T):
+        if f != 0:
+            factor = (fit.max() - fit.min())/(ft.max() - ft.min())
+            shift = np.mean(fit)
+            new_plot_fit_terms.append(list(ft*factor+shift))
+        else:
+            new_plot_fit_terms.append(list(ft))
+    new_plot_fit_terms = np.array(new_plot_fit_terms).T
+    print(new_plot_fit_terms)
+    print(new_plot_fit_terms.shape)
+    print(fit.shape)
+    
     # And the data to plot
     plot_results = ivu.InstancesDict(dict(
-            fit = np.array([t, x, fit, *list(fit_terms).T]).T,
+            fit = np.array([t, x, fit, *new_plot_fit_terms.T]).T,
             raman = np.array([raman_frequencies, raman_spectrum,
                               *list(raman_spectrum_terms.T)]).T))
     
