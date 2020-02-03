@@ -691,9 +691,9 @@ def linearPredictionPlot(filename, plot_results, extension='.png',
     # In the lower subplot, I put the data and fit
     ax_data = plt.subplot(grid[1:,:])
     ldata, = plt.plot(fit[:,0], fit[:,1], 'k', linewidth=0.4)
-    ax_data.autoscale(False)
+#    ax_data.autoscale(False)
     lfit, = plt.plot(fit[:,0], fit[:,2], linewidth=2)
-    lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=2)
+    lfit_terms = plt.plot(fit[:,0], fit[:,3:], linewidth=1)
     for l in lfit_terms: l.set_visible(False)
     plt.xlabel("Tiempo (ps)")
     plt.ylabel(r"Voltaje ($\mu$V)")
